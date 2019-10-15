@@ -64,10 +64,14 @@ classdef data
         function obj = resize(obj)
             %obj.value = obj.value;
         end
-        function obj = plot(obj,startValue)
-            time = (1:size(obj.values,2))*0.020 + startValue;
-            plot(time,obj.values);
-            title([char(obj.name) ' [' char(obj.unit) ']']);
+        function obj = plot(obj,startTime)
+            time = (1:size(obj.values,2))*0.020 + startTime;
+            plot(time,obj.values,'LineWidth',2);
+            title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',16);
+            %ylim([min([0 obj.values],[],'all') (1.5*max(obj.values,[],'all'))]);
+            xlim(([min(time) (max(time))]));
+            xlabel('Time [s]','fontsize',20);
+            ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
         end
     end
 end

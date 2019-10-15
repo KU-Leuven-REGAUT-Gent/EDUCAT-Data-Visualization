@@ -31,9 +31,12 @@ classdef measurement
             obj.list = select( obj.conn,sqlquery);            
         end
         
-        function obj = declaration(obj, measurement_id)
-            
-            sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
+        function obj = set_measurement_ID(obj,measurement_id)
+            obj.id = measurement_id;
+        end
+        
+        function obj = declaration(obj)
+           sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
                         '       `STP_measurements`.`setup_user_id`, ' ...
                         '       `STP_measurements`.`start_time`, ' ...
                         '       `STP_measurements`.`end_time`, ' ...
@@ -42,7 +45,7 @@ classdef measurement
                         'FROM `STP_measurements` ' ...
                         'INNER JOIN `STP_setups_users` ' ...
                         'ON `STP_measurements`.`setup_user_id` = `STP_setups_users`.`id` ' ...
-                        'WHERE `STP_measurements`.`id` = ' int2str(measurement_id) ';'];
+                        'WHERE `STP_measurements`.`id` = ' int2str(obj.id) ';'];
             measurement_info = select(obj.conn, sqlquery);   
             
             obj.id = measurement_info.id;
@@ -72,7 +75,7 @@ classdef measurement
                 obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i));
             end
         end
-        function obj = get_datasets(obj)
+        function obj = get_dataset_DB(obj)
             sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
                         '       `STP_measurement_dataset`.`cyclecounter`, ' ...
                         '       `STP_measurement_dataset`.`state`, ' ...
@@ -87,6 +90,22 @@ classdef measurement
                 obj = obj.add_dataset(dataset_list.cyclecounter(i), dataset_list.data{i});
             end
         end
+        %*********************** SD card data ***********************
+        function obj = get_measurement_fromSD(obj)
+            % in progress
+            %obj.id =
+        end
+        
+        function obj = get_dataset_SD(obj)
+            % in progress
+            %....
+            len = size(dataset_list,1);
+            for i = 1:len
+                obj = obj.add_dataset(dataset_list.cyclecounter(i), dataset_list.data{i});
+            end
+        end
+        
+        % *************** Add dataset to instrument *******************
         function obj = add_dataset(obj, cyclecounter, blob)
             offset = 1;
             for i = 1:obj.n_instruments                
