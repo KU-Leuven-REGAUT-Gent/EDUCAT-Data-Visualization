@@ -63,8 +63,9 @@ classdef data
         function obj = resize(obj)
             %obj.value = obj.value;
         end
-        function obj = plot(obj)
-            plot(obj.values);
+        function obj = plot(obj,startValue)
+            time = (1:size(obj.values,2))*0.020 + startValue;
+            plot(time,obj.values);
             title([char(obj.name) ' [' char(obj.unit) ']']);
         end
     end

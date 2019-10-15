@@ -8,22 +8,31 @@ classdef measurement
         setup_id, ...
         n_instruments, ...
         description, ...
-        instruments
+        instruments, ...
+        list
     end
     properties (Hidden)
         conn
     end
     methods
-        function obj = measurement(measurement_id)
+        function obj = measurement(user, pswd)
             % No database object necessary
             % Install https://dev.mysql.com/downloads/windows/installer/8.0.html
-            % javaaddpath("D:\Downloads\Browser\mysql-connector-java-8.0.18\mysql-connector-java-8.0.18.jar");
+            % javaaddpath("D:\Software\mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
             databaseName = "educat";
-            username = "";
-            password = "";
+            username = user;
+            password = pswd;
             jdbcDriver = "com.mysql.cj.jdbc.Driver";
             server = "jdbc:mysql://clouddb.myriade.be:20100/";
             obj.conn = database(databaseName, username, password, jdbcDriver, server);            
+            
+            
+            % get list
+            sqlquery = "SELECT `id`, `description`, `start_time`, `end_time` FROM `STP_measurements`;";
+            obj.list = select( obj.conn,sqlquery);            
+        end
+        
+        function obj = declaration(obj, measurement_id)
             
             sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
                         '       `STP_measurements`.`setup_user_id`, ' ...
@@ -35,11 +44,11 @@ classdef measurement
                         'INNER JOIN `STP_setups_users` ' ...
                         'ON `STP_measurements`.`setup_user_id` = `STP_setups_users`.`id` ' ...
                         'WHERE `STP_measurements`.`id` = ' int2str(measurement_id) ';'];
-            measurement_info = select(obj.conn, sqlquery);            
+            measurement_info = select(obj.conn, sqlquery);   
             
             obj.id = measurement_info.id;
-            obj.start_time = measurement_info.start_time;
-            obj.end_time = measurement_info.end_time;
+            obj.start_time = double(measurement_info.start_time)/1000;
+            obj.end_time = double(measurement_info.end_time)/1000;
             obj.setup_id = measurement_info.setup_id;
             obj.description = measurement_info.description; 
             
@@ -64,12 +73,7 @@ classdef measurement
                 obj.instruments(i) = instrument(datatype_list.id(i),datatype_list.name(i),datatype_list.description(i),datatype_list.value(i));
             end
                         
-            % get list
-            %sqlquery = "SELECT `id`, `setup_user_id`, `start_time`, `end_time`, `description` FROM `STP_measurements`;"
-            %List = select(conn,sqlquery)
-            % get data
-            %sqlquery = "SELECT `STP_measurement_dataset`.`id`, `STP_measurement_dataset`.`cyclecounter`, `STP_measurement_dataset`.`state`, `STP_measurement_data`.`data` FROM `STP_measurement_dataset` INNER JOIN `STP_measurement_data` ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` WHERE `measurement_id` = 7;";
-            %educatDB = select(conn,sqlquery)
+           
         end    
         function obj = get_datasets(obj)
             sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
@@ -96,7 +100,7 @@ classdef measurement
         end
         function obj = plot_all(obj)
             for i = 1:obj.n_instruments
-                obj.instruments(i).plot_all();
+                obj.instruments(i).plot_all(obj.start_time);
             end
         end
     end
