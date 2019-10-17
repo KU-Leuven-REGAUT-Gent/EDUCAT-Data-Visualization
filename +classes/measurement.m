@@ -14,10 +14,12 @@ classdef measurement
         conn
     end
     methods
+        %% Create object measurement and get a connection with DB
+      
         function obj = measurement(user, pswd)
             % No database object necessary
             % Install https://dev.mysql.com/downloads/windows/installer/8.0.html
-            % javaaddpath("D:\Software\mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
+            javaaddpath(".\mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
             databaseName = "educat";
             username = user;
             password = pswd;
@@ -27,13 +29,24 @@ classdef measurement
             
             
             % get list
-            sqlquery = "SELECT `id`, `description`, `start_time`, `end_time` FROM `STP_measurements`;";
+            sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
+                         '      `STP_measurements`.`description`, ' ...
+                         '      `STP_measurements`.`start_time`, ' ...
+                         '      `STP_measurements`.`end_time`, ' ...
+                         '      COUNT(`STP_measurement_dataset`.`cyclecounter`) AS `count`,  ' ...
+                         '      MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
+                         'FROM `STP_measurements` ' ...
+                         'LEFT JOIN `STP_measurement_dataset` ' ...
+                         'ON `STP_measurements`.`id` = `STP_measurement_dataset`.`measurement_id` ' ...
+                         'GROUP BY `STP_measurements`.`id` ' ...
+                         'ORDER BY `id` DESC;'];
             obj.list = select( obj.conn,sqlquery);            
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
             obj.id = measurement_id;
         end
+        %%  *************** declaration of instruments *******************
         
         function obj = declaration(obj)
            sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
@@ -75,6 +88,9 @@ classdef measurement
                 obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i));
             end
         end
+        
+        %% *********************** Get data ***************************
+       
         function obj = get_dataset_DB(obj)
             sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
                         '       `STP_measurement_dataset`.`cyclecounter`, ' ...
@@ -90,7 +106,19 @@ classdef measurement
                 obj = obj.add_dataset(dataset_list.cyclecounter(i), dataset_list.data{i});
             end
         end
-        %*********************** SD card data ***********************
+        
+        %% *********************** SD card data ***********************
+        
+        function out = exportData(obj)
+            for i=obj.instruments
+                name = strcat("data.", i.name);
+               
+                out = eval([name '= ' num2str(i.export) ';']);
+            end
+        end
+        
+    
+        %% *********************** SD card data ***********************
         function obj = get_measurement_fromSD(obj)
             % in progress
             %obj.id =
@@ -104,8 +132,7 @@ classdef measurement
                 obj = obj.add_dataset(dataset_list.cyclecounter(i), dataset_list.data{i});
             end
         end
-        
-        % *************** Add dataset to instrument *******************
+        %% *************** Add dataset to instrument *******************
         function obj = add_dataset(obj, cyclecounter, blob)
             offset = 1;
             for i = 1:obj.n_instruments                

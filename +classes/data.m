@@ -38,7 +38,7 @@ classdef data
         function obj = add_value(obj,cyclecounter, blob)
             switch obj.datatype %% ENUMERATING to prevent String compares during live loop
                 case 0 %int_8
-                    obj.values(cyclecounter) = blob;
+                    obj.values(cyclecounter) = typecast(blob,'int8');
                 case 1 %uint_8
                     obj.values(cyclecounter) = typecast(blob,'uint8');
                 case 2 %int_16
@@ -64,13 +64,16 @@ classdef data
         function obj = resize(obj)
             %obj.value = obj.value;
         end
-        function obj = plot(obj,startTime)
+        function obj = plot(obj,startTime,xlabelOn)
             time = (1:size(obj.values,2))*0.020 + startTime;
-            plot(time,obj.values,'LineWidth',2);
+            timeAndDay = datetime(time, 'convertfrom','posixtime');
+            plot(timeAndDay,obj.values,'LineWidth',2);
             title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',16);
             %ylim([min([0 obj.values],[],'all') (1.5*max(obj.values,[],'all'))]);
-            xlim(([min(time) (max(time))]));
-            xlabel('Time [s]','fontsize',20);
+            xlim(([min(timeAndDay) (max(timeAndDay))]));
+            if xlabelOn
+                xlabel('Time (UTC)','fontsize',20);
+            end
             ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
         end
     end
