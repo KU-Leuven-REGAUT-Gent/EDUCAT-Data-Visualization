@@ -6,30 +6,40 @@ classdef data
         unit
     end
     methods
-        function obj = data(name, unit, datatype)
+        function obj = data(name, unit, datatype,maxCycleCount)
             obj.name = name;  
             obj.unit = unit;
             switch datatype %% ENUMERATING to prevent String compares during live loop
                 case "int_8"
                     obj.datatype = 0;
+                    obj.values = int8.empty(maxCycleCount,0);
                 case "uint_8"
-                    obj.datatype = 1;                    
+                    obj.datatype = 1;  
+                    obj.values = uint8.empty(maxCycleCount,0);
                 case "int_16"
                     obj.datatype = 2;
+                    obj.values = int16.empty(maxCycleCount,0);
                 case "uint_16"
                     obj.datatype = 3;
+                    obj.values = uint16.empty(maxCycleCount,0);
                 case "iint_32"
                     obj.datatype = 4;
+                    obj.values = int32.empty(maxCycleCount,0);
                 case "uint_32"
                     obj.datatype = 5;
+                    obj.values = uint32.empty(maxCycleCount,0);
                 case "float_32"
                     obj.datatype = 6;
+                    obj.values = single.empty(maxCycleCount,0);
                 case "int_64"
                     obj.datatype = 7;
+                    obj.values = int64.empty(maxCycleCount,0);
                 case "uint_64"
                     obj.datatype = 8;
+                    obj.values = uint64.empty(maxCycleCount,0);
                 case "float_64"
                     obj.datatype = 9;
+                    obj.values = double.empty(maxCycleCount,0);
                 otherwise
                     error("MATLAB Datatype not supported")
             end
@@ -43,7 +53,6 @@ classdef data
                     obj.values(cyclecounter) = typecast(blob,'uint8');
                 case 2 %int_16
                     obj.values(cyclecounter) = typecast(blob(2:-1:1),'int16');
-                    %obj.values(cyclecounter) = typecast(blob(1:2),'int16');
                 case 3 %uint_16
                     obj.values(cyclecounter) = typecast(blob(2:-1:1),'uint16');
                 case 4 %int_32

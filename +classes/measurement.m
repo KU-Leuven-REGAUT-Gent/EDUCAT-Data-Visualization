@@ -4,6 +4,7 @@ classdef measurement
         id, ...
         start_time, ...
         end_time, ...
+        max_cycleCount, ...
         setup_id, ...
         n_instruments, ...
         description, ...
@@ -40,7 +41,9 @@ classdef measurement
                          'ON `STP_measurements`.`id` = `STP_measurement_dataset`.`measurement_id` ' ...
                          'GROUP BY `STP_measurements`.`id` ' ...
                          'ORDER BY `id` DESC;'];
-            obj.list = select( obj.conn,sqlquery);            
+            obj.list = select( obj.conn,sqlquery); 
+            obj.list.start_time= datetime(double(obj.list.start_time)/1000, 'convertfrom','posixtime'); 
+            obj.list.end_time= datetime(double(obj.list.end_time)/1000, 'convertfrom','posixtime');
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
@@ -62,8 +65,8 @@ classdef measurement
             measurement_info = select(obj.conn, sqlquery);   
             
             obj.id = measurement_info.id;
-            obj.start_time = double(measurement_info.start_time)/1000;
-            obj.end_time = double(measurement_info.end_time)/1000;
+            obj.start_time = double(measurement_info.start_time)/1000; 
+            obj.end_time = double(measurement_info.end_time)/1000; 
             obj.setup_id = measurement_info.setup_id;
             obj.description = measurement_info.description; 
             
@@ -71,21 +74,29 @@ classdef measurement
             sqlquery = ['SELECT `STP_instrument_type_parameter_values`.`value`,' ...
                         '       `STP_instruments`.`id`,' ...
                         '       `STP_instruments`.`name`,' ...
-                        '       `STP_instruments`.`description`' ...
+                        '       `STP_instruments`.`description`' ...                        
                         'FROM `STP_instrument_type_parameter_values` ' ...
                         'INNER JOIN `STP_instruments` ' ...
-                        'ON `STP_instruments`.`instrument_type_id` = `STP_instrument_type_parameter_values`.`instrument_type_id` ' ...
+                        ' ON `STP_instruments`.`instrument_type_id` = `STP_instrument_type_parameter_values`.`instrument_type_id` ' ...
                         'INNER JOIN `STP_setups_instruments` ' ...
-                        'ON `STP_setups_instruments`.`instrument_id` = `STP_instruments`.`id` ' ...
-                        'INNER JOIN `STP_setups` ON `STP_setups`.`id` = `STP_setups_instruments`.`setup_id` ' ...
-                        'WHERE `STP_instrument_type_parameter_values`.`parameter_id` = 33 ' ...
-                        'AND `STP_setups`.`id` = ' int2str(obj.setup_id) ' ' ...
+                        ' ON `STP_setups_instruments`.`instrument_id` = `STP_instruments`.`id` ' ...
+                        'INNER JOIN `STP_setups` ' ...
+                        ' ON `STP_setups`.`id` = `STP_setups_instruments`.`setup_id` ' ...
+                        'WHERE `STP_instrument_type_parameter_values`.`parameter_id` = 33 ' ...                        
+                        ' AND `STP_setups`.`id` = ' int2str(obj.setup_id) ' ' ...
                         'ORDER BY `STP_instruments`.`id` ASC;'];
-            datatype_list = select(obj.conn,sqlquery);            
+            datatype_list = select(obj.conn,sqlquery);
+            
+            sqlquery = ['SELECT MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
+                        'FROM `STP_measurement_dataset` ' ...
+                        'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ';'];
+            maxCycleCount = select(obj.conn,sqlquery);       
+            obj.max_cycleCount = maxCycleCount.max;
+                    
             obj.n_instruments = size(datatype_list,1);
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
             for i = 1:obj.n_instruments
-                obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i));
+                obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i),obj.max_cycleCount);
             end
         end
         
@@ -98,24 +109,34 @@ classdef measurement
                         '       `STP_measurement_data`.`data` ' ...
                         'FROM `STP_measurement_dataset` '  ...
                         'INNER JOIN `STP_measurement_data` ' ... 
-                        'ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` ' ...
-                        'WHERE `measurement_id` = ' int2str(obj.id) ';'];
+                        ' ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` ' ...
+                        'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ' ' ...
+                        ' AND `STP_measurement_dataset`.`cyclecounter` <= ' int2str(obj.max_cycleCount) ';'];
             dataset_list = select(obj.conn,sqlquery);
+            
             len = size(dataset_list,1);
             for i = 1:len
                 obj = obj.add_dataset(dataset_list.cyclecounter(i), dataset_list.data{i});
             end
         end
         
-        %% *********************** SD card data ***********************
-        
-        function out = exportData(obj)
+        %% *********************** export data ***********************
+          function  exportData(obj)
             for i=obj.instruments
-                name = strcat("data.", i.name);
+                nameCell = strcat(i.name, num2str(i.id));
+               for j= 1 :size(i.data,2)
+                    nameSensor= strcat( nameCell, '.',char(i.data(j).name));
+                    genName = matlab.lang.makeValidName(nameSensor);
+                    eval([genName '= i.data(' num2str(j) ').values ;']);
+                    assignin('base',genName,i.data(j).values);
+                end
                
-                out = eval([name '= ' num2str(i.export) ';']);
             end
-        end
+             time = (1:size(obj.instruments(1).data(1).values,2))*0.020 + obj.start_time;
+             time = datetime(time, 'convertfrom','posixtime');
+            assignin('base',"time", time);
+           end
+     
         
     
         %% *********************** SD card data ***********************
@@ -149,5 +170,8 @@ classdef measurement
                 obj.instruments(i).plot_all(obj.start_time);
             end
         end
+    
+
+         
     end
 end
