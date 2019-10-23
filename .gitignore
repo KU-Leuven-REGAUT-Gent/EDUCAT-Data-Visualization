@@ -1,4 +1,7 @@
-# exclude mat asv and jdb
+# Exclude MATLAB files
 *.mat
 *.asv
+
+# Exclude JDBC
 mysql-connector-java-8.0.18/*
+jdbc/*
