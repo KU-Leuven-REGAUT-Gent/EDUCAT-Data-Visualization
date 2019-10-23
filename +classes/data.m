@@ -77,13 +77,13 @@ classdef data
             time = (1:size(obj.values,2))*0.020 + startTime;
             timeAndDay = datetime(time, 'convertfrom','posixtime');
             plot(timeAndDay,obj.values,'LineWidth',2);
-            title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',16);
+            title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',14);
             %ylim([min([0 obj.values],[],'all') (1.5*max(obj.values,[],'all'))]);
             xlim(([min(timeAndDay) (max(timeAndDay))]));
             if xlabelOn
-                xlabel('Time (UTC)','fontsize',20);
+                xlabel('Time (UTC)','fontsize',14);
             end
-            ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
+            ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',14);
         end
     end
 end
