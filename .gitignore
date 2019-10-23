@@ -1,0 +1,4 @@
+# exclude mat asv and jdb
+*.mat
+*.asv
+mysql-connector-java-8.0.18/*
