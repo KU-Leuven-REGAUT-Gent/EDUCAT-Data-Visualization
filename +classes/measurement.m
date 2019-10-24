@@ -42,8 +42,18 @@ classdef measurement
                 'GROUP BY `STP_measurements`.`id` ' ...
                 'ORDER BY `id` DESC;'];
             obj.list = select( obj.conn,sqlquery);
-            obj.list.start_time= datetime(double(obj.list.start_time)/1000, 'convertfrom','posixtime');
-            obj.list.end_time= datetime(double(obj.list.end_time)/1000, 'convertfrom','posixtime');
+            % start time
+            ms = uint64(obj.list.start_time);
+            wholeSecs = floor(double(ms)/1e3);
+            fracSecs = double(ms - uint64(wholeSecs)*1e3)/1e3;
+            obj.list.start_time = datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
+           
+            % end time 
+            ms = uint64(obj.list.end_time);
+            wholeSecs = floor(double(ms)/1e3);
+            fracSecs = double(ms - uint64(wholeSecs)*1e3)/1e3;
+            obj.list.end_time = datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
+            
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
@@ -155,7 +165,9 @@ classdef measurement
                 
             end
             time = (1:size(obj.instruments(1).data(1).values,2))*0.020 + obj.start_time;
-            time = datetime(time, 'convertfrom','posixtime');
+            wholeSecs = floor(double(time));
+            fracSecs = time - wholeSecs;
+            time =  datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
             assignin('base',"time", time);
             cycleCount = 1:1:size(obj.instruments(1).data(1).values,2);
             assignin('base',"cycleCount", cycleCount);
