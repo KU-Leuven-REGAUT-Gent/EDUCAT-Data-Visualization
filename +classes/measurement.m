@@ -17,13 +17,40 @@ classdef measurement
     methods
         %% Create object measurement and get a connection with DB
         
-        function obj = measurement(user, pswd)
+        function obj = measurement()
+            % OBJECT CREATION
+        end
+        function obj = connect(obj)
             % No database object necessary
-            % Install https://dev.mysql.com/downloads/windows/installer/8.0.html
-            javaaddpath(".\mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
+            % Install https://dev.mysql.com/downloads/file/?id=490495
+            if isfile("jdbc/mysql-connector-java-8.0.18.jar")
+                javaaddpath("jdbc/mysql-connector-java-8.0.18.jar");
+            elseif isfile("mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar")
+                % legacy jdbc location
+                javaaddpath("mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
+            else
+                error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory");
+            end
+              
             databaseName = "educat";
-            username = user;
-            password = pswd;
+            username = "analyst";
+            disp([' EDUCAT DB username: ' char(username)]);
+            if isfile("password.mat")
+                load password.mat password;
+            end
+            if ~exist('password','var')
+                password = input(' EDUCAT DB password: ','s');
+                store_password = input(' store this password (Y/N): ','s');
+                if store_password == "Y"
+                    save password.mat password;
+                    warning off backtrace;                    
+                    warning("Password saved to 'password.mat' file");
+                    warning on backtrace;
+                end
+            else
+                disp(' EDUCAT DB password (retrieved from file)');
+            end
+            
             jdbcDriver = "com.mysql.cj.jdbc.Driver";
             server = "jdbc:mysql://clouddb.myriade.be:20100/";
             obj.conn = database(databaseName, username, password, jdbcDriver, server);

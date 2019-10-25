@@ -1,3 +1,6 @@
+# Exclude BIN file
+*.bin
+
 # Exclude MATLAB files
 *.mat
 *.asv
