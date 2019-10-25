@@ -1,3 +1,13 @@
+%% GITHUB
+git_pull = input(' Do you want to pull the latest version from GITHUB (Y/N): ','s');
+if git_pull == "Y" || git_pull == "y" || git_pull == "yes"
+    !git pull
+    warning off backtrace;  
+    warning("Script executing has stopped to allow for a Github pull");
+    warning on backtrace;  
+    return;
+end
+
 %% EDUCAT database visualization
 % TIP: When requesting new data or starting a new connection  --> right click and select " clear all Output" 
 clear
@@ -26,7 +36,7 @@ else
     disp("ID does not exist in database")
 end
 
-Export data to workspace
+%% Export data to workspace
 m.exportData();
 
 
@@ -48,15 +58,12 @@ else
 end
 
 
-save workspace to .mat file in data folder
-StoreName = "20191021";
- 
-
-filename = strcat(StoreName,'.mat');
-if ~exist("data", 'dir')
-    mkdir("data")
+%% save workspace to .mat file in data folder
+StoreName = 'filename'; 
+if ~exist('data', 'dir')
+    mkdir('data')
 end
-store = fullfile(pwd, "data",filename);
+store = fullfile(pwd, 'data', [StoreName '.mat']);
 save(store);
 
 
@@ -80,8 +87,8 @@ title("gz vs turn" ,'fontsize',fontsize);
 legend(["turn","gz"]);
 
 %% Heatmaps
-figure()
-heatmap([m.instruments(1,1).data(1,2).values m.instruments(1,2).data(1,6).values])
+% figure()
+% heatmap([m.instruments(1,1).data(1,2).values m.instruments(1,2).data(1,6).values])
 
 
 
