@@ -29,7 +29,11 @@ classdef measurement
                 % legacy jdbc location
                 javaaddpath("mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
             else
-                error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory");
+                if ~exist("jdbc", 'dir')
+                    mkdir("jdbc")                    
+                end
+                error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be place in a subdirectory, but directly in the root of the jdbc directory.");
+                
             end
               
             databaseName = "educat";
@@ -41,7 +45,7 @@ classdef measurement
             if ~exist('password','var')
                 password = input(' EDUCAT DB password: ','s');
                 store_password = input(' store this password (Y/N): ','s');
-                if store_password == "Y"
+                if store_password == "Y" || store_password == "y" || store_password == "yes"
                     save password.mat password;
                     warning off backtrace;                    
                     warning("Password saved to 'password.mat' file");
