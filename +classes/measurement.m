@@ -57,6 +57,8 @@ classdef measurement
             
             jdbcDriver = "com.mysql.cj.jdbc.Driver";
             server = "jdbc:mysql://clouddb.myriade.be:20100/";
+            
+            % TODO: Check for valid connection
             obj.conn = database(databaseName, username, password, jdbcDriver, server);
             
             
