@@ -20,14 +20,30 @@ m = m.connect();
 m.list
 
 %% Declaration of measurement
+
+
 id = input('ID: ');
 if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 2)
     disp('ID exists, running...')
+    tic
     m=m.set_measurement_ID(id);
+   % profile on
     m = m.declaration();
+    disp("Time declaration: " + toc)
     % ******* get data ********
+    tic
     m = m.get_dataset_DB();
+    disp("Time getting data from DB: " + toc)
+    % ******* process data ******
+    tic
+     %disp(" Choose the period of 
+     
+    m= m.processData_DB();
+    
+    disp("Time processing the data: " + toc)
     disp("done")
+    %profile viewer
+    disp("Max cycle count: "+ m.max_cycleCount)
     duration = datetime(m.end_time, 'convertfrom','posixtime') - datetime(m.start_time, 'convertfrom','posixtime');
     disp(['duration: ' datestr(duration,'HH:MM:SS.FFF')])
 elseif m.list.count(find(m.list.id == id,1)) < 2

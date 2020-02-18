@@ -68,7 +68,8 @@ classdef data
                 case 9 %float_64
                     obj.values(cyclecounter) = typecast(blob(8:-1:1),'double');
             end
-            %%obj.value(cyclecounter).value;
+            %obj.value(cyclecounter).value;
+            
         end
         function obj = resize(obj)
             %obj.value = obj.value;

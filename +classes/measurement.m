@@ -12,14 +12,22 @@ classdef measurement
             list
     end
     properties (Hidden)
-        conn
+        conn,...
+        dataset_list,...
+        EnableStoreMemory,...
+        memoryDeclaration,...
+        memoryInstrument,...
+        memoryProcess
     end
     methods
         %% Create object measurement and get a connection with DB
         
         function obj = measurement()
             % OBJECT CREATION
+            % enable the storage of the memory usage 
+            obj.EnableStoreMemory = false;
         end
+        
         function obj = connect(obj)
             % No database object necessary
             % Install https://dev.mysql.com/downloads/file/?id=490495
@@ -86,7 +94,7 @@ classdef measurement
             wholeSecs = floor(double(ms)/1e3);
             fracSecs = double(ms - uint64(wholeSecs)*1e3)/1e3;
             obj.list.end_time = datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
-            
+           
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
@@ -95,7 +103,14 @@ classdef measurement
         %%  *************** declaration of instruments *******************
         
         function obj = declaration(obj)
-            sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
+           
+           sqlquery = ['SELECT MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
+                'FROM `STP_measurement_dataset` ' ...
+                'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ';'];
+            maxCycleCount = select(obj.conn,sqlquery);
+            obj.max_cycleCount = maxCycleCount.max;
+            
+         sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
                 '       `STP_measurements`.`setup_user_id`, ' ...
                 '       `STP_measurements`.`start_time`, ' ...
                 '       `STP_measurements`.`end_time`, ' ...
@@ -105,6 +120,7 @@ classdef measurement
                 'INNER JOIN `STP_setups_users` ' ...
                 'ON `STP_measurements`.`setup_user_id` = `STP_setups_users`.`id` ' ...
                 'WHERE `STP_measurements`.`id` = ' int2str(obj.id) ';'];
+            
             measurement_info = select(obj.conn, sqlquery);
             
             obj.id = measurement_info.id;
@@ -112,8 +128,9 @@ classdef measurement
             obj.end_time = double(measurement_info.end_time)/1000;
             obj.setup_id = measurement_info.setup_id;
             obj.description = measurement_info.description;
-            
+
             % Selecting setup
+            
             sqlquery = ['SELECT `STP_instrument_type_parameter_values`.`value`,' ...
                 '       `STP_instruments`.`id`,' ...
                 '       `STP_instruments`.`name`,' ...
@@ -130,46 +147,74 @@ classdef measurement
                 'ORDER BY `STP_instruments`.`id` ASC;'];
             datatype_list = select(obj.conn,sqlquery);
             
-            sqlquery = ['SELECT MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
-                'FROM `STP_measurement_dataset` ' ...
-                'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ';'];
-            maxCycleCount = select(obj.conn,sqlquery);
-            obj.max_cycleCount = maxCycleCount.max;
+            
             
             obj.n_instruments = size(datatype_list,1);
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
             for i = 1:obj.n_instruments
                 obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i),obj.max_cycleCount);
+                % RAM memory usage
+                if obj.EnableStoreMemory 
+                    [user,sys] = memory;
+                    obj.memoryDeclaration(i)= user.MemUsedMATLAB;
+                end
             end
         end
         
+        function obj= getMeasurementInfo (obj)
+        
+        end
         %% *********************** Get data ***************************
         
         function obj = get_dataset_DB(obj)
-            sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
-                '       `STP_measurement_dataset`.`cyclecounter`, ' ...
-                '       `STP_measurement_dataset`.`state`, ' ...
-                '       `STP_measurement_data`.`data` ' ...
-                'FROM `STP_measurement_dataset` '  ...
-                'INNER JOIN `STP_measurement_data` ' ...
-                ' ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` ' ...
-                'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ' ' ...
-                ' AND `STP_measurement_dataset`.`cyclecounter` <= ' int2str(obj.max_cycleCount) ';'];
-            dataset_list = select(obj.conn,sqlquery);
-            
-            len = size(dataset_list,1);
-            for i = 1:len
-                obj = obj.add_dataset(dataset_list.cyclecounter(i), dataset_list.data{i});
+            Limit = 5000;
+            for i=0:Limit:obj.max_cycleCount
+                endLimit = i+Limit ;
+                if i+Limit > obj.max_cycleCount
+                    endLimit= obj.max_cycleCount;
+                end
+                sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
+                    '       `STP_measurement_dataset`.`cyclecounter`, ' ...
+                    '       `STP_measurement_dataset`.`state`, ' ...
+                    '       `STP_measurement_data`.`data` ' ...
+                    'FROM `STP_measurement_dataset` '  ...
+                    'INNER JOIN `STP_measurement_data` ' ...
+                    ' ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` ' ...
+                    'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ' ' ...
+                    ' AND `STP_measurement_dataset`.`cyclecounter` <= ' int2str(endLimit) ' '...
+                    ' AND `STP_measurement_dataset`.`cyclecounter` >= ' int2str(i) ';'];
+
+                obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
             end
+        end
+        %% processing 
+        function obj = processData_DB(obj)
+            len = size(obj.dataset_list,1);
+            for i = len:-1:1
+                obj = obj.add_dataset(obj.dataset_list.cyclecounter(i), obj.dataset_list.data{i});
+                % RAM memory usage
+                if mod(i,1000)==0 && obj.EnableStoreMemory 
+                    [user,sys] = memory;
+                    obj.memoryProcess(i/1000)= user.MemUsedMATLAB;
+                end 
+            end
+           obj.dataset_list = [];
         end
         
 
         %% *************** Add dataset to instrument *******************
         function obj = add_dataset(obj, cyclecounter, blob)
             offset = 1;
+            
             for i = 1:obj.n_instruments
                 new_offset = offset + obj.instruments(i).length;
                 obj.instruments(i) = obj.instruments(i).add_data(cyclecounter, blob(offset:new_offset));
+                % RAM memory usage
+                if mod(cyclecounter,1000)==0 && obj.EnableStoreMemory 
+                    [user,sys] = memory;
+                    obj.memoryInstrument(cyclecounter/1000,i) =  user.MemUsedMATLAB;
+                end 
+                
                 if blob(new_offset) ~= -128
                     error("No 0x80 at the end");
                 end
