@@ -75,12 +75,11 @@ classdef data
             %obj.value = obj.value;
         end
         function obj = plot(obj,startTime,xlabelOn)
-            time = (1:size(obj.values,2))*0.020 + startTime;
-            timeAndDay = datetime(time, 'convertfrom','posixtime');
-            plot(timeAndDay,obj.values,'LineWidth',2);
+            time = seconds(0:(size(obj.values,2)-1))*0.020 + startTime;
+            plot(time,obj.values,'LineWidth',2);
             title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',14);
             %ylim([min([0 obj.values],[],'all') (1.5*max(obj.values,[],'all'))]);
-            xlim(([min(timeAndDay) (max(timeAndDay))]));
+            xlim(([min(time) (max(time))]));
             if xlabelOn
                 xlabel('Time (UTC)','fontsize',14);
             end

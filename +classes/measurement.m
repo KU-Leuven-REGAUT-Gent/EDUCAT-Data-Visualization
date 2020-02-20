@@ -4,6 +4,8 @@ classdef measurement
         id, ...
             start_time, ...
             end_time, ...
+            start_cycleCount,...
+            end_cycleCount,...
             max_cycleCount, ...
             setup_id, ...
             n_instruments, ...
@@ -14,7 +16,7 @@ classdef measurement
     properties (Hidden)
         conn,...
         dataset_list,...
-        EnableStoreMemory,...
+        enableStoreMemory,...
         memoryDeclaration,...
         memoryInstrument,...
         memoryProcess
@@ -25,7 +27,7 @@ classdef measurement
         function obj = measurement()
             % OBJECT CREATION
             % enable the storage of the memory usage 
-            obj.EnableStoreMemory = false;
+            obj.enableStoreMemory = false;
         end
         
         function obj = connect(obj)
@@ -102,13 +104,15 @@ classdef measurement
         end
         %%  *************** declaration of instruments *******************
         
-        function obj = declaration(obj)
+        function obj = declaration(obj,date,duration)
+           
            
            sqlquery = ['SELECT MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
                 'FROM `STP_measurement_dataset` ' ...
                 'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ';'];
             maxCycleCount = select(obj.conn,sqlquery);
-            obj.max_cycleCount = maxCycleCount.max;
+            obj.max_cycleCount = maxCycleCount.max;            
+            
             
          sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
                 '       `STP_measurements`.`setup_user_id`, ' ...
@@ -122,13 +126,63 @@ classdef measurement
                 'WHERE `STP_measurements`.`id` = ' int2str(obj.id) ';'];
             
             measurement_info = select(obj.conn, sqlquery);
-            
             obj.id = measurement_info.id;
-            obj.start_time = double(measurement_info.start_time)/1000;
-            obj.end_time = double(measurement_info.end_time)/1000;
+          
             obj.setup_id = measurement_info.setup_id;
             obj.description = measurement_info.description;
-
+            
+%             regexDate = '^(0[1-9]|[1-2][0-9]|3[0-1])[-/](0[1-9]|1[0-2])[-/]([0-9]{4})( ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?)?$';
+%             regexTime ='^ ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?$';
+%             dateCapture = regexp(date,regexDate, 'tokens');
+%             if size(dateCapture{1}{4},2)=4
+%             timeCapture = regexp(dateCapture{1}{4},regexTime, 'tokens');
+%             end
+            
+            if contains(date,'full')
+                obj.start_time = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+                obj.end_time = datetime(measurement_info.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+                pulled_cycleCounts = obj.max_cycleCount;
+                obj.end_cycleCount = obj.max_cycleCount;
+                obj.start_cycleCount = 0;
+            else 
+                % Set start time and start and end cyclecount
+                if contains(date,'.')
+                 obj.start_time = datetime(date,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                elseif contains(date,':')
+                    obj.start_time = datetime(date,'InputFormat','dd-MM-yyyy HH:mm:ss', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                elseif contains(date,'/')
+                    startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+                    if contains(date,datestr(startMeasurement))
+                      obj.start_time = startMeasurement;
+                    else % start time will be midnight
+                      obj.start_time = datetime(date,'InputFormat','dd/MM/yyyy', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                    end
+                elseif  contains(date,'-')
+                   startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+                    if contains(date,datestr(startMeasurement,'dd-mm-yyyy'))
+                      obj.start_time = startMeasurement;
+                    else % start time will be midnight
+                      obj.start_time = datetime(date,'InputFormat','dd-MM-yyyy', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                    end
+                else
+                    error("wrong input format of the date choose one of the following notations: 'dd-MM-yyyy', 'dd/MM/yyyy', 'dd-MM-yyyy HH:mm:ss''dd-MM-yyyy HH:mm:ss.SSS',  ");
+                end
+                
+                dateNr = posixtime(obj.start_time);     
+                % set cycle counters
+                obj.start_cycleCount = ceil(double(int64(dateNr*1000) - measurement_info.start_time)/1000/0.02+1);
+                if obj.start_cycleCount < 0         
+                     error("out of range");
+                end
+                obj.end_cycleCount = floor(double(int64(dateNr*1000) + (duration*60*60*1000) - measurement_info.start_time)/1000/0.02+1); 
+                
+                pulled_cycleCounts =  obj.end_cycleCount-obj.start_cycleCount+1;
+                obj.end_time = obj.start_time + seconds(pulled_cycleCounts*0.02);
+            end  
+                
+           
+            
+            
             % Selecting setup
             
             sqlquery = ['SELECT `STP_instrument_type_parameter_values`.`value`,' ...
@@ -152,9 +206,9 @@ classdef measurement
             obj.n_instruments = size(datatype_list,1);
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
             for i = 1:obj.n_instruments
-                obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i),obj.max_cycleCount);
+                obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i), pulled_cycleCounts);
                 % RAM memory usage
-                if obj.EnableStoreMemory 
+                if obj.enableStoreMemory 
                     [user,sys] = memory;
                     obj.memoryDeclaration(i)= user.MemUsedMATLAB;
                 end
@@ -168,10 +222,13 @@ classdef measurement
         
         function obj = get_dataset_DB(obj)
             Limit = 5000;
-            for i=0:Limit:obj.max_cycleCount
+            if Limit > (obj.end_cycleCount-obj.start_cycleCount)
+            Limit = obj.end_cycleCount-obj.start_cycleCount+1;
+            end
+            for i=obj.start_cycleCount:Limit:obj.end_cycleCount
                 endLimit = i+Limit ;
-                if i+Limit > obj.max_cycleCount
-                    endLimit= obj.max_cycleCount;
+                if i+Limit > obj.end_cycleCount-1
+                    endLimit= obj.end_cycleCount+1;
                 end
                 sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
                     '       `STP_measurement_dataset`.`cyclecounter`, ' ...
@@ -181,7 +238,7 @@ classdef measurement
                     'INNER JOIN `STP_measurement_data` ' ...
                     ' ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` ' ...
                     'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ' ' ...
-                    ' AND `STP_measurement_dataset`.`cyclecounter` <= ' int2str(endLimit) ' '...
+                    ' AND `STP_measurement_dataset`.`cyclecounter` < ' int2str(endLimit) ' '...
                     ' AND `STP_measurement_dataset`.`cyclecounter` >= ' int2str(i) ';'];
 
                 obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
@@ -191,16 +248,28 @@ classdef measurement
         function obj = processData_DB(obj)
             len = size(obj.dataset_list,1);
             for i = len:-1:1
+                obj = obj.add_dataset(int64(obj.dataset_list.cyclecounter(i))-obj.start_cycleCount+1, obj.dataset_list.data{i});
+                % RAM memory usage
+                if mod(i,1000)==0 && obj.enableStoreMemory 
+                    [user,sys] = memory;
+                    obj.memoryProcess(i/1000)= user.MemUsedMATLAB;
+                end 
+            end
+           %obj.dataset_list = [];
+        end
+        
+        function obj = processDayData_DB(obj)
+            len = size(obj.dataset_list,1);
+            for i = len:-1:1
                 obj = obj.add_dataset(obj.dataset_list.cyclecounter(i), obj.dataset_list.data{i});
                 % RAM memory usage
-                if mod(i,1000)==0 && obj.EnableStoreMemory 
+                if mod(i,1000)==0 && obj.enableStoreMemory 
                     [user,sys] = memory;
                     obj.memoryProcess(i/1000)= user.MemUsedMATLAB;
                 end 
             end
            obj.dataset_list = [];
         end
-        
 
         %% *************** Add dataset to instrument *******************
         function obj = add_dataset(obj, cyclecounter, blob)
@@ -210,7 +279,7 @@ classdef measurement
                 new_offset = offset + obj.instruments(i).length;
                 obj.instruments(i) = obj.instruments(i).add_data(cyclecounter, blob(offset:new_offset));
                 % RAM memory usage
-                if mod(cyclecounter,1000)==0 && obj.EnableStoreMemory 
+                if mod(cyclecounter,1000)==0 && obj.enableStoreMemory 
                     [user,sys] = memory;
                     obj.memoryInstrument(cyclecounter/1000,i) =  user.MemUsedMATLAB;
                 end 

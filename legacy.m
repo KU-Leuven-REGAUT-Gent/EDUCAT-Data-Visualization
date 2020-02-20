@@ -23,24 +23,32 @@ m.list
 
 
 id = input('ID: ');
+disp("type a date or type full to get the full measurement")  
+date = input('Date: ','s');
+if ~contains(date,'full')
+    duration = input('Duration: ');
+end
+
 if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 2)
     disp('ID exists, running...')
     tic
     m=m.set_measurement_ID(id);
    % profile on
-    m = m.declaration();
+    m = m.declaration(date,duration);
     disp("Time declaration: " + toc)
     % ******* get data ********
     tic
     m = m.get_dataset_DB();
     disp("Time getting data from DB: " + toc)
     % ******* process data ******
-    tic
-     %disp(" Choose the period of 
-     
-    m= m.processData_DB();
+%     tic
+%     m= m.processData_DB();
+%      %disp(" Choose the period of 
+%      
+%     t=parfeval(@m.processData_DB,1);
+%     minFuture = afterAll(t, @(r) paste(t) , 1);
     
-    disp("Time processing the data: " + toc)
+%     disp("Time processing the data: " + toc)
     disp("done")
     %profile viewer
     disp("Max cycle count: "+ m.max_cycleCount)
@@ -51,6 +59,7 @@ elseif m.list.count(find(m.list.id == id,1)) < 2
 else
     disp("ID does not exist in database")
 end
+
 
 %% Export data to workspace
 export = input('export to workspace (Y/N): ','s');
@@ -116,7 +125,9 @@ if  ownCode== "y" || ownCode == "Y" || ownCode == "yes"
 end
 
 
-
+function m = paste(obj)
+    m = obj;
+end
 
 
 
