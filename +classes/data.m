@@ -45,30 +45,44 @@ classdef data
             end
             %obj.resize();
         end
-        function obj = add_value(obj,cyclecounter, blob)
+        function obj = add_value(obj, blob)
             switch obj.datatype %% ENUMERATING to prevent String compares during live loop
                 case 0 %int_8
-                    obj.values(cyclecounter) = typecast(blob,'int8');
+                    reOut = reshape(blob',1,[]);
+                    obj.values = typecast(reOut,'int8'); 
                 case 1 %uint_8
-                    obj.values(cyclecounter) = typecast(blob,'uint8');
+                    reOut = reshape(blob',1,[]);
+                    obj.values = typecast(reOut,'uint8');
                 case 2 %int_16
-                    obj.values(cyclecounter) = typecast(blob(2:-1:1),'int16');
+                    reOut = reshape(blob(:,2:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'int16');
                 case 3 %uint_16
-                    obj.values(cyclecounter) = typecast(blob(2:-1:1),'uint16');
+                    reOut = reshape(blob(:,2:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'uint16');
                 case 4 %int_32
-                    obj.values(cyclecounter) = typecast(blob(4:-1:1),'int32');
+                    reOut = reshape(blob(:,4:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'int32');
                 case 5 %uint_32
-                    obj.values(cyclecounter) = typecast(blob(4:-1:1),'uint32');
+                    reOut = reshape(blob(:,4:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'uint32');
                 case 6 %float_32
-                    obj.values(cyclecounter) = typecast(blob(4:-1:1),'single');
+                    reOut = reshape(blob(:,4:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'single');
                 case 7 %int_64
-                    obj.values(cyclecounter) = typecast(blob(8:-1:1),'int64');
+                    reOut = reshape(blob(:,8:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'int64');
                 case 8 %uint_64
-                    obj.values(cyclecounter) = typecast(blob(8:-1:1),'uint64');
+                    reOut = reshape(blob(:,8:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'uint64');
                 case 9 %float_64
-                    obj.values(cyclecounter) = typecast(blob(8:-1:1),'double');
+                    reOut = reshape(blob(:,8:-1:1)',1,[]);
+                    obj.values = typecast(reOut,'double');
+                    %obj.values = typecast(blob(8:-1:1),'double');
             end
             %obj.value(cyclecounter).value;
+            
+            
+            
             
         end
         function obj = resize(obj)

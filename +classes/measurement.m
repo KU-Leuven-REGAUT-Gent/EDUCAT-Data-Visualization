@@ -240,41 +240,36 @@ classdef measurement
                     ' AND `STP_measurement_dataset`.`cyclecounter` >= ' int2str(i) ';'];
 
                 obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
+                
             end
         end
         %% processing 
         function obj = processData_DB(obj)
-            len = size(obj.dataset_list,1);
-            for i = len:-1:1
-                obj = obj.add_dataset(int64(obj.dataset_list.cyclecounter(i))-obj.start_cycleCount+1, obj.dataset_list.data{i});
-                % RAM memory usage
-                if mod(i,1000)==0 && obj.enableStoreMemory 
-                    [user,sys] = memory;
-                    obj.memoryProcess(i/1000)= user.MemUsedMATLAB;
-                end 
-            end
-           %obj.dataset_list = [];
-        end
-        
-
-        %% *************** Add dataset to instrument *******************
-        function obj = add_dataset(obj, cyclecounter, blob)
+           
             offset = 1;
-            
+             
+            % converting Cell to array and shifting the array in case of
+            % missing cycle counters
+            dataset = cell2mat(obj.dataset_list.data')';
+            shiftedData= zeros(obj.end_cycleCount - obj.start_cycleCount,size(dataset,2),'int8')-128;
+            shiftedData(obj.dataset_list.cyclecounter,:)= dataset;
+ 
+                        
             for i = 1:obj.n_instruments
                 new_offset = offset + obj.instruments(i).length;
-                obj.instruments(i) = obj.instruments(i).add_data(cyclecounter, blob(offset:new_offset));
+                obj.instruments(i) = obj.instruments(i).add_data( shiftedData(:,offset:new_offset));
                 % RAM memory usage
-                if mod(cyclecounter,1000)==0 && obj.enableStoreMemory 
+                if  obj.enableStoreMemory 
                     [user,sys] = memory;
-                    obj.memoryInstrument(cyclecounter/1000,i) =  user.MemUsedMATLAB;
+                    obj.memoryInstrument(i) =  user.MemUsedMATLAB;
                 end 
-                
-                if blob(new_offset) ~= -128
+                 
+                if shiftedData(:,new_offset) ~= -128
                     error("No 0x80 at the end");
                 end
                 offset = new_offset+1;
             end
+            clear dataset shiftedData
         end
         %% *************** plot all instrument *******************
         
