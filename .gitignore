@@ -1,10 +1,14 @@
 # Exclude BIN file
 *.bin
+*.BIN
 *.csv
+*.CSV
 
 # Exclude MATLAB files
 *.mat
+*.MAT
 *.asv
+*.ASV
 
 # Exclude JDBC
 mysql-connector-java-8.0.18/*
