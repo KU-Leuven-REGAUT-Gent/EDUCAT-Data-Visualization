@@ -41,14 +41,9 @@ if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 
     m = m.get_dataset_DB();
     disp("Time getting data from DB: " + toc)
     % ******* process data ******
-%     tic
-%     m= m.processData_DB();
-%      %disp(" Choose the period of 
-%      
-%     t=parfeval(@m.processData_DB,1);
-%     minFuture = afterAll(t, @(r) paste(t) , 1);
-    
-%     disp("Time processing the data: " + toc)
+    tic
+    m= m.processData_DB();
+    disp("Time processing the data: " + toc)
     disp("done")
     %profile viewer
     disp("Max cycle count: "+ m.max_cycleCount)

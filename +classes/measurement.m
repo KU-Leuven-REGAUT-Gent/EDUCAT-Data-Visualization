@@ -215,9 +215,7 @@ classdef measurement
             end
         end
         
-        function obj= getMeasurementInfo (obj)
         
-        end
         %% *********************** Get data ***************************
         
         function obj = get_dataset_DB(obj)
@@ -258,18 +256,6 @@ classdef measurement
            %obj.dataset_list = [];
         end
         
-        function obj = processDayData_DB(obj)
-            len = size(obj.dataset_list,1);
-            for i = len:-1:1
-                obj = obj.add_dataset(obj.dataset_list.cyclecounter(i), obj.dataset_list.data{i});
-                % RAM memory usage
-                if mod(i,1000)==0 && obj.enableStoreMemory 
-                    [user,sys] = memory;
-                    obj.memoryProcess(i/1000)= user.MemUsedMATLAB;
-                end 
-            end
-           obj.dataset_list = [];
-        end
 
         %% *************** Add dataset to instrument *******************
         function obj = add_dataset(obj, cyclecounter, blob)
