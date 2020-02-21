@@ -1,17 +1,20 @@
 
 classdef measurement 
+    % Measurment summary
+    % 
+    
     properties
         id, ...
-            start_time, ...
-            end_time, ...
-            start_cycleCount,...
-            end_cycleCount,...
-            max_cycleCount, ...
-            setup_id, ...
-            n_instruments, ...
-            description, ...
-            instruments, ...
-            list
+        start_time, ...
+        end_time, ...
+        start_cycleCount,...
+        end_cycleCount,...
+        max_cycleCount, ...
+        setup_id, ...
+        n_instruments, ...
+        description, ...
+        instruments, ...
+        list
     end
     properties (Hidden)
         conn,...
@@ -31,6 +34,8 @@ classdef measurement
         end
         
         function obj = connect(obj)
+        % <a href="matlab:web('www.mathworks.com','-browser')">Internal Wiki [test of shit]</a>
+            
             % No database object necessary
             % Install https://dev.mysql.com/downloads/file/?id=490495
             if isfile("jdbc/mysql-connector-java-8.0.18.jar")
@@ -42,7 +47,7 @@ classdef measurement
                 if ~exist('jdbc', 'dir')
                     mkdir('jdbc')                    
                 end
-                error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be place in a subdirectory, but directly in the root of the jdbc directory.");
+                error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory, but directly in the root of the jdbc directory.");
                 
             end
               
@@ -85,18 +90,12 @@ classdef measurement
                 'GROUP BY `STP_measurements`.`id` ' ...
                 'ORDER BY `id` DESC;'];
             obj.list = select( obj.conn,sqlquery);
+            
             % start time
-            ms = uint64(obj.list.start_time);
-            wholeSecs = floor(double(ms)/1e3);
-            fracSecs = double(ms - uint64(wholeSecs)*1e3)/1e3;
-            obj.list.start_time = datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
+            obj.list.start_time = datetime(obj.list.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
            
             % end time 
-            ms = uint64(obj.list.end_time);
-            wholeSecs = floor(double(ms)/1e3);
-            fracSecs = double(ms - uint64(wholeSecs)*1e3)/1e3;
-            obj.list.end_time = datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
-           
+            obj.list.end_time = datetime(obj.list.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
@@ -126,62 +125,68 @@ classdef measurement
                 'WHERE `STP_measurements`.`id` = ' int2str(obj.id) ';'];
             
             measurement_info = select(obj.conn, sqlquery);
-            obj.id = measurement_info.id;
-          
+            obj.id = measurement_info.id;      
             obj.setup_id = measurement_info.setup_id;
-            obj.description = measurement_info.description;
+            obj.description = measurement_info.description;            
             
-%             regexDate = '^(0[1-9]|[1-2][0-9]|3[0-1])[-/](0[1-9]|1[0-2])[-/]([0-9]{4})( ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?)?$';
-%             regexTime ='^ ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?$';
-%             dateCapture = regexp(date,regexDate, 'tokens');
-%             if size(dateCapture{1}{4},2)=4
-%             timeCapture = regexp(dateCapture{1}{4},regexTime, 'tokens');
-%             end
-            
-            if contains(date,'full')
+            % Set Start and end time and the cycle counters 
+            if contains(date,'full','IgnoreCase',true) || isempty(date)              
                 obj.start_time = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
                 obj.end_time = datetime(measurement_info.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
                 pulled_cycleCounts = obj.max_cycleCount;
                 obj.end_cycleCount = obj.max_cycleCount;
                 obj.start_cycleCount = 0;
             else 
+                 regexDate = '^(0[1-9]|[1-2][0-9]|3[0-1])[-/](0[1-9]|1[0-2])[-/]([0-9]{4})( ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?)?$';
+                 dateCapture = regexp(date,regexDate, 'tokens');
+
+                 % check if date is correct
+                 trials = 0;
+                 while  isempty(dateCapture) && trials <=3
+                     if trials ==3
+                         exit
+                     end
+                     warning off backtrace;
+                     warning("Wrong format! the folowing types are supported: for dates 'dd/MM-yyyy' or 'dd-MM-yyyy' and the following symbols for time: 'h','m','s',':' and '.' for miliseconds");
+                     warning on backtrace;
+                     date = input('Date: ','s');
+                     dateCapture = regexp(date,regexDate, 'tokens');
+                     trials = trials +1;                
+                 end
+
+                 % split date and reformat the date 
+                 dateSplit = split(date,{'-','/',':','h','m','s','.',' '},2);
+                 if isempty(dateSplit{end}) % if a symbol is at the end of the string a 0x0 char will be present in the dateSplit
+                     dateSplit{end} = [];
+                     sizeSplit = size(dateSplit,2)-1;
+                 else
+                     sizeSplit = size(dateSplit,2);
+                 end
+                              dateSymbols = ["-","-"," ",":",":","."]; 
+                 dateArray = reshape([dateSplit(1:sizeSplit) ;dateSymbols(1:sizeSplit)],1,[]);
+                 dateConverted = strjoin(dateArray(1:end-1),"");
+
+                 % set start time
+                 startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');    
+                 if (size(dateSplit,2)==3) && contains(dateConverted,datestr(startMeasurement,'dd-mm-yyyy'))
+                         obj.start_time = startMeasurement;
+                 else % start time will be midnight
+                         obj.start_time = datetime(dateConverted,'InputFormat','dd-MM-yyyy', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                 end
+
                 % Set start time and start and end cyclecount
-                if contains(date,'.')
-                 obj.start_time = datetime(date,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
-                elseif contains(date,':')
-                    obj.start_time = datetime(date,'InputFormat','dd-MM-yyyy HH:mm:ss', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
-                elseif contains(date,'/')
-                    startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
-                    if contains(date,datestr(startMeasurement))
-                      obj.start_time = startMeasurement;
-                    else % start time will be midnight
-                      obj.start_time = datetime(date,'InputFormat','dd/MM/yyyy', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
-                    end
-                elseif  contains(date,'-')
-                   startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
-                    if contains(date,datestr(startMeasurement,'dd-mm-yyyy'))
-                      obj.start_time = startMeasurement;
-                    else % start time will be midnight
-                      obj.start_time = datetime(date,'InputFormat','dd-MM-yyyy', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
-                    end
-                else
-                    error("wrong input format of the date choose one of the following notations: 'dd-MM-yyyy', 'dd/MM/yyyy', 'dd-MM-yyyy HH:mm:ss''dd-MM-yyyy HH:mm:ss.SSS',  ");
-                end
-                
+
                 dateNr = posixtime(obj.start_time);     
                 % set cycle counters
                 obj.start_cycleCount = ceil(double(int64(dateNr*1000) - measurement_info.start_time)/1000/0.02+1);
-                if obj.start_cycleCount < 0         
+                if obj.start_cycleCount < 0 
+                    
                      error("out of range");
                 end
                 obj.end_cycleCount = floor(double(int64(dateNr*1000) + (duration*60*60*1000) - measurement_info.start_time)/1000/0.02+1); 
-                
                 pulled_cycleCounts =  obj.end_cycleCount-obj.start_cycleCount+1;
                 obj.end_time = obj.start_time + seconds(pulled_cycleCounts*0.02);
-            end  
-                
-           
-            
+            end
             
             % Selecting setup
             
@@ -200,9 +205,7 @@ classdef measurement
                 ' AND `STP_setups`.`id` = ' int2str(obj.setup_id) ' ' ...
                 'ORDER BY `STP_instruments`.`id` ASC;'];
             datatype_list = select(obj.conn,sqlquery);
-            
-            
-            
+                     
             obj.n_instruments = size(datatype_list,1);
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
             for i = 1:obj.n_instruments
@@ -213,13 +216,12 @@ classdef measurement
                     obj.memoryDeclaration(i)= user.MemUsedMATLAB;
                 end
             end
-        end
-        
+        end       
         
         %% *********************** Get data ***************************
         
         function obj = get_dataset_DB(obj)
-            Limit = 5000;
+        Limit = 5000;
             if Limit > (obj.end_cycleCount-obj.start_cycleCount)
             Limit = obj.end_cycleCount-obj.start_cycleCount+1;
             end
@@ -241,7 +243,18 @@ classdef measurement
 
                 obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
                 
+                
             end
+            cycleSequence = 1:1:(obj.end_cycleCount - obj.start_cycleCount);
+            missingCycles = setdiff(cycleSequence,obj.dataset_list.cyclecounter');
+         
+            if ~isempty(missingCycles)
+                warning off backtrace;
+                warning(" %i cyclecounters are missing:(first 25 are shown)\n%s %s", size(missingCycles,2),join(string(missingCycles(1:min([25 size(missingCycles,2)]))),", "));
+                warning on backtrace;
+            end
+            
+            
         end
         %% processing 
         function obj = processData_DB(obj)
@@ -274,6 +287,7 @@ classdef measurement
         %% *************** plot all instrument *******************
         
         function obj = plot_all(obj)
+           
             for i = 1:obj.n_instruments
                 obj.instruments(i).plot_all(obj.id,obj.start_time);
             end
@@ -283,22 +297,19 @@ classdef measurement
                %% *********************** export data ***********************
         function  exportData(obj)
             for i=obj.instruments
-                nameCell = strcat(i.name, num2str(i.id));
+                nameCell = strcat('ID',num2str(obj.id),'.inst', num2str(i.id),'.',i.name);
                 for j= 1 :size(i.data,2)
                     nameSensor= strcat( nameCell, '.',char(i.data(j).name));
                     genName = matlab.lang.makeValidName(nameSensor);
                     eval([genName '= i.data(' num2str(j) ').values ;']);
                     assignin('base',genName,i.data(j).values);
                 end
-                
+                %'ID',string(obj.id),'.',
             end
-            time = (1:size(obj.instruments(1).data(1).values,2))*0.020 + obj.start_time;
-            wholeSecs = floor(double(time));
-            fracSecs = time - wholeSecs;
-            time =  datetime(wholeSecs, 'convertfrom','posixtime','Format','dd-MM-yyyy HH:mm:ss.SSS')+ seconds(fracSecs);
-            assignin('base',"time", time);
+            time = seconds((1:size(obj.instruments(1).data(1).values,2))*0.020) + obj.start_time;
+            assignin('base',strcat('ID',num2str(obj.id),'_time'), time);
             cycleCount = 1:1:size(obj.instruments(1).data(1).values,2);
-            assignin('base',"cycleCount", cycleCount);
+            assignin('base',strcat('ID',num2str(obj.id),'_cycleCount'), cycleCount);
         end
         
         

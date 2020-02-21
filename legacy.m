@@ -1,3 +1,41 @@
+%% ******************* EDUCAT visualization legacy ********************
+% 
+%This script is made and optimized for MATLAB R2019a
+%Some functions are unsupported in older versions of MATLAB
+%-   datetime: the property 'TicksPerSecond' is not supported
+%
+%This script is made for getting the data from the educat database.
+%
+%---------------------- Dependencies ----------------------
+%-  Needed classes in the folder "+classes":
+%   -  measurement
+%   -  instrument
+%   -  data
+%
+%-  The following toolboxes are needed:
+%   -   database_toolbox
+%   
+%-  For the connection with de EDUCAT database a JDBC MYSQL Connector is
+%   required. This driver must be located in the jdbc folder, which is in 
+%   the same directory as this script.
+%
+%-  Optional: installation of git on your computer. This allows to pull the
+%   most recent version of the script. For this git software need to be
+%   installed. 
+%   This can be downloaded from: https://git-scm.com/downloads
+%   
+%
+%Installation guide if not present:
+%1) Download the JDBC driver from:
+%   https://dev.mysql.com/downloads/file/?id=490495
+%2) Unzip the folder in the jdbc folder at the same directory as this
+%   legacy.m script
+%3) mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory,
+%   but directly in the root of the jdbc folder.
+%
+%---------------------- Execution order ----------------------
+%
+
 %% GITHUB
 git_pull = input(' Do you want to pull the latest version from GITHUB (Y/N): ','s');
 if git_pull == "Y" || git_pull == "y" || git_pull == "yes"
@@ -10,6 +48,7 @@ end
 
 %% EDUCAT database visualization
 % TIP: When requesting new data or starting a new connection  --> right click and select " clear all Output" 
+% the help function is available trough help classes.measurement
 clear
 clc
 close all
@@ -21,15 +60,14 @@ m.list
 
 %% Declaration of measurement
 
-
 id = input('ID: ');
-disp("type a date or type full to get the full measurement")  
-date = input('Date: ','s');
-if ~contains(date,'full')
-    duration = input('Duration: ');
-end
-
 if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 2)
+    disp("type a date or type full to get the full measurement")  
+    date = input('Date: ','s');
+    if (~contains(date,'full') && ~isempty(date)) || ~isempty(date)
+        duration = input('Duration: ');
+    end
+
     disp('ID exists, running...')
     tic
     m=m.set_measurement_ID(id);
@@ -41,11 +79,11 @@ if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 
     m = m.get_dataset_DB();
     disp("Time getting data from DB: " + toc)
     % ******* process data ******
-     tic
-     m= m.processData_DB();
-     disp("Time processing the data: " + toc)
-%     disp("done")
-%     %profile viewer
+    tic
+    m= m.processData_DB();
+    disp("Time processing the data: " + toc)
+    disp("done")
+    %profile viewer
     disp("Max cycle count: "+ m.max_cycleCount)
     duration = datetime(m.end_time, 'convertfrom','posixtime') - datetime(m.start_time, 'convertfrom','posixtime');
     disp(['duration: ' datestr(duration,'HH:MM:SS.FFF')])
@@ -53,19 +91,20 @@ elseif m.list.count(find(m.list.id == id,1)) < 2
     disp("measurement contains no data")
 else
     disp("ID does not exist in database")
+    exit
 end
-
+clear id date
 
 %% Export data to workspace
 export = input('export to workspace (Y/N): ','s');
-if  export== "y" || export == "Y" || export == "yes" 
+if  contains( export,{'y','j'})
     m.exportData();
 end
-
+clear export
 %% Plot all measurement information
 
 plotting = input('plot the measurement (Y/N): ','s');
-if  plotting== "y" || plotting == "Y" || plotting == "yes" 
+if   contains(plotting,{'y','j'})
     close all;
     display(['Moment of measurement: ' datestr(datetime(m.start_time, 'convertfrom','posixtime'),'yyyy-mm-dd HH:MM:SS.FFF')]);
 
@@ -82,22 +121,34 @@ if  plotting== "y" || plotting == "Y" || plotting == "yes"
     end
    
 end
+clear plotting
 
 %% save workspace to .mat file in data folder
-SaveWorkspace = input('Save workspace to .mat (Y/N): ','s');
-if  SaveWorkspace== "y" || SaveWorkspace == "Y" || SaveWorkspace == "yes" 
-    StoreName = 'filename'; 
+saveWorkspace = input('Save workspace to .mat (Y/N): ','s');
+if  contains(saveWorkspace,{'y','j'})
+    storeName = strcat('ID',num2str(m.id),'_workspace_ST',datestr(m.start_time,'yyyy_mm_dd_HHMMSS'));
+    nameQuestion = strcat('Do you want to change the name of the file: "', storeName, '.mat" \n y/n: ');
+    questionResult = input(nameQuestion,'s');
+    if contains(questionResult,{'y','j'})
+        storeName = input("filename (without .mat): ",'s'); 
+    end
     if ~exist('data', 'dir')
         mkdir('data')
     end
-    store = fullfile(pwd, 'data', [StoreName '.mat']);
+    
+    store = fullfile(pwd, 'data', [storeName '.mat']);
+    warning off
     save(store);  
+    if contains(lastwarn ,'serialize object')
+        warning(lastwarn);
+    end
+    clear questionResult nameQuestion storeName store 
 end
-
+clear saveWorkspace
 %% Own analysis: type your own commands
 ownCode = input('Execute own code (Y/N): ','s');
-if  ownCode== "y" || ownCode == "Y" || ownCode == "yes" 
-    time = (1:size(m.instruments(1,2).data(1,6).values,2))*0.02 + m.start_time;
+if contains(ownCode,{'y','j'}) 
+    time = seconds((1:size(m.instruments(1,2).data(1,6).values,2))*0.02) + m.start_time;
     figure();
     fontsize = 20;
     set(gca,'fontsize',fontsize) % set fontsize of the plot to 20
@@ -118,12 +169,7 @@ if  ownCode== "y" || ownCode == "Y" || ownCode == "yes"
     % figure()
     % heatmap([m.instruments(1,1).data(1,2).values m.instruments(1,2).data(1,6).values])
 end
-
-
-function m = paste(obj)
-    m = obj;
-end
-
+clear ownCode ans
 
 
 
