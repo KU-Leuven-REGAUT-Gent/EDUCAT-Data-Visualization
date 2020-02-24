@@ -1,16 +1,25 @@
 %% ******************* EDUCAT visualization legacy ********************
 % 
+%                               Authors:
+%                Frederic Depuydt and Dimitri De Schuyter
+%
+%                               Company: 
+%                              KU Leuven  
+%
+%**********************************************************************
+%
 %This script is made and optimized for MATLAB R2019a
 %Some functions are unsupported in older versions of MATLAB
 %-   datetime: the property 'TicksPerSecond' is not supported
 %
 %This script is made for getting the data from the educat database.
 %
-%---------------------- Dependencies ----------------------
-%-  Needed classes in the folder "+classes":
-%   -  measurement
-%   -  instrument
-%   -  data
+%%---------------------- Dependencies ----------------------
+%  Needed classes in the folder "+classes":
+%
+%   *  measurement ( for more info type: doc classes.measurement) 
+%   *  instrument  ( for more info type: doc classes.instrument) 
+%   *  data        ( for more info type: doc classes.data) 
 %
 %-  The following toolboxes are needed:
 %   -   database_toolbox
@@ -24,6 +33,9 @@
 %   installed. 
 %   This can be downloaded from: https://git-scm.com/downloads
 %   
+% _If you made changes and you get a warning than you can revert the
+%   changes by right click on the script which has a blue state.Then click
+%   "Source control" --> "Revert local changes"_
 %
 %Installation guide if not present:
 %1) Download the JDBC driver from:
@@ -33,10 +45,21 @@
 %3) mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory,
 %   but directly in the root of the jdbc folder.
 %
-%---------------------- Execution order ----------------------
+%---------------------- methods ----------------------
 %
+%---------------------- Execution order ----------------------
+%For each function can be chosen whether or not to execute it.
+%1) pull the latest version from GITHUB (only when git is installed on the
+%   pc).
+%2) Initializing, creating measurement object and start database
+%   connection.
+%3) Declaration, getting the data and processing of measurement.
+%4) Export each sensor to the workspace.
+%5) Plot the standard implemented plots.
+%6) Save the workspace to .mat
+%7) Own analysis code
 
-%% GITHUB
+%% 1) GITHUB
 git_pull = input(' Do you want to pull the latest version from GITHUB (Y/N): ','s');
 if git_pull == "Y" || git_pull == "y" || git_pull == "yes"
     !git pull
@@ -46,7 +69,11 @@ if git_pull == "Y" || git_pull == "y" || git_pull == "yes"
     return;
 end
 
-%% EDUCAT database visualization
+
+
+
+
+%% 2) EDUCAT database visualization
 % TIP: When requesting new data or starting a new connection  --> right click and select " clear all Output" 
 % the help function is available trough help classes.measurement
 clear
@@ -58,7 +85,7 @@ m = m.connect();
 
 m.list
 
-%% Declaration of measurement
+%% 3) Declaration, getting the data and processing of measurement
 
 id = input('ID: ');
 if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 2)
@@ -95,13 +122,13 @@ else
 end
 clear id date
 
-%% Export data to workspace
+%% 4) Export data to workspace
 export = input('export to workspace (Y/N): ','s');
 if  contains( export,{'y','j'})
     m.exportData();
 end
 clear export
-%% Plot all measurement information
+%% 5) Plot all measurement information
 
 plotting = input('plot the measurement (Y/N): ','s');
 if   contains(plotting,{'y','j'})
@@ -123,7 +150,7 @@ if   contains(plotting,{'y','j'})
 end
 clear plotting
 
-%% save workspace to .mat file in data folder
+%% 6) save workspace to .mat file in data folder
 saveWorkspace = input('Save workspace to .mat (Y/N): ','s');
 if  contains(saveWorkspace,{'y','j'})
     storeName = strcat('ID',num2str(m.id),'_workspace_ST',datestr(m.start_time,'yyyy_mm_dd_HHMMSS'));
@@ -145,7 +172,7 @@ if  contains(saveWorkspace,{'y','j'})
     clear questionResult nameQuestion storeName store 
 end
 clear saveWorkspace
-%% Own analysis: type your own commands
+%% 7 Own analysis: type your own commands
 ownCode = input('Execute own code (Y/N): ','s');
 if contains(ownCode,{'y','j'}) 
     time = seconds((1:size(m.instruments(1,2).data(1,6).values,2))*0.02) + m.start_time;

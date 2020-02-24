@@ -1,7 +1,22 @@
 
 classdef measurement 
-    % Measurment summary
-    % 
+    % measurment summary
+    % This class creates an object for a measurement.
+    % The following data is stored in this object:
+    %   -  id
+    %   - start_time
+    %   - end_time
+    %   - start_cycleCount
+    %   - end_cycleCount
+    %   - max_cycleCount
+    %   - setup_id
+    %   - n_instruments
+    %   - description
+    %   - instruments
+    %
+    %The instruments variable contains all the instruments objects that are
+    %declared in the setup. 
+    
     
     properties
         id, ...
@@ -25,16 +40,23 @@ classdef measurement
         memoryProcess
     end
     methods
-        %% Create object measurement and get a connection with DB
-        
+        %% Create object measurement and get a connection with DB     
         function obj = measurement()
             % OBJECT CREATION
+            
             % enable the storage of the memory usage 
             obj.enableStoreMemory = false;
         end
         
         function obj = connect(obj)
-        % <a href="matlab:web('www.mathworks.com','-browser')">Internal Wiki [test of shit]</a>
+        % Start a connection with the EDUCAT database on the Myriade
+        % server. 
+        %
+        %The password will be asked the first time you execute the
+        %function. After the input you have the option to store this
+        %password on your pc. if you have chosen to save the password, it
+        %will start the connection immediately without asking for the
+        %password.
             
             % No database object necessary
             % Install https://dev.mysql.com/downloads/file/?id=490495
@@ -48,7 +70,6 @@ classdef measurement
                     mkdir('jdbc')                    
                 end
                 error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory, but directly in the root of the jdbc directory.");
-                
             end
               
             databaseName = "educat";
@@ -99,11 +120,27 @@ classdef measurement
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
+            %set measurement id
             obj.id = measurement_id;
         end
         %%  *************** declaration of instruments *******************
         
         function obj = declaration(obj,date,duration)
+           % gets the maximum cycle count of the measurement, the
+           % measurements info and the list of sensors of the set up.
+           % After this the declaration of the instrument objects in an
+           % array is done.
+           %
+           %Options:
+           %-   To get the full measurement: 
+           %        date variable must contain "full" or is empty
+           %
+           %-   For a specific date:  format 'dd-MM-yyyy HH:mm:ss.SSS'
+           %        All measurements inside the range will be stored.
+           %        The time is optional but if a time is chosen, the hours
+           %        and minutes must be entered.
+           %        If no time is chosen the measurement object will have a
+           %        start time of 00:00:00.000 of the given date.
            
            
            sqlquery = ['SELECT MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
@@ -162,7 +199,7 @@ classdef measurement
                  else
                      sizeSplit = size(dateSplit,2);
                  end
-                              dateSymbols = ["-","-"," ",":",":","."]; 
+                 dateSymbols = ["-","-"," ",":",":","."]; 
                  dateArray = reshape([dateSplit(1:sizeSplit) ;dateSymbols(1:sizeSplit)],1,[]);
                  dateConverted = strjoin(dateArray(1:end-1),"");
 
@@ -175,21 +212,31 @@ classdef measurement
                  end
 
                 % Set start time and start and end cyclecount
-
                 dateNr = posixtime(obj.start_time);     
                 % set cycle counters
                 obj.start_cycleCount = ceil(double(int64(dateNr*1000) - measurement_info.start_time)/1000/0.02+1);
-                if obj.start_cycleCount < 0 
-                    
+                if obj.start_cycleCount < 0                    
                      error("out of range");
                 end
+                
+                trials =0;
+                while duration <=0
+                    if trials==3
+                        exit
+                    end
+                    warning off backtrace;
+                    warning("choose a duration higher than zero");
+                    warning on backtrace;
+                    duration = input('duration: ');
+                    trials = trials+1;
+                end
                 obj.end_cycleCount = floor(double(int64(dateNr*1000) + (duration*60*60*1000) - measurement_info.start_time)/1000/0.02+1); 
+
                 pulled_cycleCounts =  obj.end_cycleCount-obj.start_cycleCount+1;
                 obj.end_time = obj.start_time + seconds(pulled_cycleCounts*0.02);
             end
             
             % Selecting setup
-            
             sqlquery = ['SELECT `STP_instrument_type_parameter_values`.`value`,' ...
                 '       `STP_instruments`.`id`,' ...
                 '       `STP_instruments`.`name`,' ...
@@ -221,6 +268,13 @@ classdef measurement
         %% *********************** Get data ***************************
         
         function obj = get_dataset_DB(obj)
+            %Get the dataset from the 'STP_measurement_dataset table'.
+            %This contains all the data inside the chosen range
+            %MATLAB will get the data in parts of maximum 5000.
+            %
+            %A warning will be created when there are missing cycle
+            %counters
+            
         Limit = 5000;
             if Limit > (obj.end_cycleCount-obj.start_cycleCount)
             Limit = obj.end_cycleCount-obj.start_cycleCount+1;
@@ -240,10 +294,7 @@ classdef measurement
                     'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ' ' ...
                     ' AND `STP_measurement_dataset`.`cyclecounter` < ' int2str(endLimit) ' '...
                     ' AND `STP_measurement_dataset`.`cyclecounter` >= ' int2str(i) ';'];
-
-                obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
-                
-                
+                obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];                
             end
             cycleSequence = 1:1:(obj.end_cycleCount - obj.start_cycleCount);
             missingCycles = setdiff(cycleSequence,obj.dataset_list.cyclecounter');
@@ -252,12 +303,14 @@ classdef measurement
                 warning off backtrace;
                 warning(" %i cyclecounters are missing:(first 25 are shown)\n%s %s", size(missingCycles,2),join(string(missingCycles(1:min([25 size(missingCycles,2)]))),", "));
                 warning on backtrace;
-            end
-            
-            
+            end                     
         end
         %% processing 
         function obj = processData_DB(obj)
+           %The declared instruments will be filled with the sensor data.
+           %
+           %If the data doesn't contain 0x80 on the end an error will be
+           %prompted and the code stops.
            
             offset = 1;
              
@@ -287,7 +340,7 @@ classdef measurement
         %% *************** plot all instrument *******************
         
         function obj = plot_all(obj)
-           
+           %All the instruments will be plotted
             for i = 1:obj.n_instruments
                 obj.instruments(i).plot_all(obj.id,obj.start_time);
             end
@@ -296,6 +349,11 @@ classdef measurement
 
                %% *********************** export data ***********************
         function  exportData(obj)
+            %Each sensor data will be exported to the workspace.
+            %The name of the variables will be in the following format:
+            %   "IDxx_instxxx_sensorname"
+            %   
+            
             for i=obj.instruments
                 nameCell = strcat('ID',num2str(obj.id),'.inst', num2str(i.id),'.',i.name);
                 for j= 1 :size(i.data,2)
