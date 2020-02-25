@@ -1,6 +1,5 @@
-
 classdef measurement 
-    % measurment summary
+    % measurement summary
     % This class creates an object for a measurement.
     % The following data is stored in this object:
     %   -  id
@@ -14,9 +13,19 @@ classdef measurement
     %   - description
     %   - instruments
     %
-    %The instruments variable contains all the instruments objects that are
+    %The instruments variable contains all the instrument objects that are
     %declared in the setup. 
-    
+    %
+    %Method summary:
+    %*  connect                 -   Start a connection with the EDUCAT database on the Myriade server
+ 	%*  declaration             -	gets the maximum cycle count, measurements info and the list of sensors.
+ 	%*  exportData              -   Each sensor data will be exported to the workspace. 
+ 	%*  get_dataset_DB          -   Get the dataset from the 'STP_measurement_dataset table'. 
+ 	%*  get_dataset_SD          -	in progress 
+ 	%*  get_measurement_fromSD  -   in progress 
+ 	%*  plot_all                -	All the instruments will be plotted 
+ 	%*  processData_DB          -   The declared instruments will be filled with the sensor data. 
+ 	%*  set_measurement_ID      -   set measurement id 
     
     properties
         id, ...
@@ -141,15 +150,13 @@ classdef measurement
            %        and minutes must be entered.
            %        If no time is chosen the measurement object will have a
            %        start time of 00:00:00.000 of the given date.
-           
-           
+     
            sqlquery = ['SELECT MAX(`STP_measurement_dataset`.`cyclecounter`) AS `max` ' ...
                 'FROM `STP_measurement_dataset` ' ...
                 'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ';'];
             maxCycleCount = select(obj.conn,sqlquery);
             obj.max_cycleCount = maxCycleCount.max;            
-            
-            
+                     
          sqlquery = ['SELECT `STP_measurements`.`id`, ' ...
                 '       `STP_measurements`.`setup_user_id`, ' ...
                 '       `STP_measurements`.`start_time`, ' ...
@@ -275,7 +282,7 @@ classdef measurement
             %A warning will be created when there are missing cycle
             %counters
             
-        Limit = 5000;
+        Limit = 1000000;
             if Limit > (obj.end_cycleCount-obj.start_cycleCount)
             Limit = obj.end_cycleCount-obj.start_cycleCount+1;
             end
@@ -296,6 +303,10 @@ classdef measurement
                     ' AND `STP_measurement_dataset`.`cyclecounter` >= ' int2str(i) ';'];
                 obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];                
             end
+            if obj.dataset_list.cyclecounter(1)==0
+                obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
+            end
+            
             cycleSequence = 1:1:(obj.end_cycleCount - obj.start_cycleCount);
             missingCycles = setdiff(cycleSequence,obj.dataset_list.cyclecounter');
          
@@ -316,21 +327,18 @@ classdef measurement
              
             % converting Cell to array and shifting the array in case of
             % missing cycle counters
-            dataset = cell2mat(obj.dataset_list.data')';
-            shiftedData= zeros(obj.end_cycleCount - obj.start_cycleCount,size(dataset,2),'int8')-128;
-            shiftedData(obj.dataset_list.cyclecounter,:)= dataset;
- 
-                        
+             dataset = cell2mat(obj.dataset_list.data')';
+                     
             for i = 1:obj.n_instruments
                 new_offset = offset + obj.instruments(i).length;
-                obj.instruments(i) = obj.instruments(i).add_data( shiftedData(:,offset:new_offset));
+                obj.instruments(i) = obj.instruments(i).add_data( obj.dataset_list.cyclecounter, dataset(:,offset:new_offset));
                 % RAM memory usage
                 if  obj.enableStoreMemory 
                     [user,sys] = memory;
                     obj.memoryInstrument(i) =  user.MemUsedMATLAB;
                 end 
                  
-                if shiftedData(:,new_offset) ~= -128
+                if ( dataset(:,new_offset)~= -128 - isnan(dataset(:,new_offset)))>0
                     error("No 0x80 at the end");
                 end
                 offset = new_offset+1;
@@ -353,7 +361,7 @@ classdef measurement
             %The name of the variables will be in the following format:
             %   "IDxx_instxxx_sensorname"
             %   
-            
+                       
             for i=obj.instruments
                 nameCell = strcat('ID',num2str(obj.id),'.inst', num2str(i.id),'.',i.name);
                 for j= 1 :size(i.data,2)
@@ -364,14 +372,21 @@ classdef measurement
                 end
                 %'ID',string(obj.id),'.',
             end
-            time = seconds((1:size(obj.instruments(1).data(1).values,2))*0.020) + obj.start_time;
+            time = (seconds((1:size(obj.instruments(1).data(1).values,1))*0.020) + obj.start_time)';
             assignin('base',strcat('ID',num2str(obj.id),'_time'), time);
-            cycleCount = 1:1:size(obj.instruments(1).data(1).values,2);
+            cycleCount = (1:1:size(obj.instruments(1).data(1).values,1))';
             assignin('base',strcat('ID',num2str(obj.id),'_cycleCount'), cycleCount);
+            info.measurementID= obj.id;
+            info.setupID= obj.setup_id;
+            info.startTime= datestr(obj.start_time,'dd/mm/yyyy HH:MM:SS.FFF');
+            info.endTime= datestr(obj.end_time,'dd/mm/yyyy HH:MM:SS.FFF');
+            assignin('base',strcat('ID',num2str(obj.id),'_info'),info);
         end
-        
-        
-        
+        %% 
+        function [] =  save(obj,fname,varargin)     
+            save(fname,'obj',varargin{:});
+        end
+                
         %% *********************** SD card data ***********************
         function obj = get_measurement_fromSD(obj)
             % in progress

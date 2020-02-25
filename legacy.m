@@ -1,5 +1,5 @@
-%% ******************* EDUCAT visualization legacy ********************
-% 
+%******************* EDUCAT visualization legacy ********************
+%{
 %                               Authors:
 %                Frederic Depuydt and Dimitri De Schuyter
 %
@@ -58,6 +58,7 @@
 %5) Plot the standard implemented plots.
 %6) Save the workspace to .mat
 %7) Own analysis code
+%}
 
 %% 1) GITHUB
 git_pull = input(' Do you want to pull the latest version from GITHUB (Y/N): ','s');
@@ -68,10 +69,6 @@ if git_pull == "Y" || git_pull == "y" || git_pull == "yes"
     warning on backtrace;  
     return;
 end
-
-
-
-
 
 %% 2) EDUCAT database visualization
 % TIP: When requesting new data or starting a new connection  --> right click and select " clear all Output" 
@@ -120,22 +117,25 @@ else
     disp("ID does not exist in database")
     exit
 end
-clear id date
+clear  date duration 
 
 %% 4) Export data to workspace
 export = input('export to workspace (Y/N): ','s');
 if  contains( export,{'y','j'})
+    tic
     m.exportData();
+    disp("Time export to workspace: " + toc)
 end
 clear export
+
 %% 5) Plot all measurement information
 
 plotting = input('plot the measurement (Y/N): ','s');
 if   contains(plotting,{'y','j'})
     close all;
     display(['Moment of measurement: ' datestr(datetime(m.start_time, 'convertfrom','posixtime'),'yyyy-mm-dd HH:MM:SS.FFF')]);
-
-    if  exist('id','var')
+    tic  
+    if  exist('m','var')
         if  m.list.count(find(m.list.id == id,1)) > 2
             m.plot_all();
         elseif m.list.count < 2
@@ -146,7 +146,7 @@ if   contains(plotting,{'y','j'})
     else
         disp("get first the data")
     end
-   
+    disp("Time plotting: " + toc)
 end
 clear plotting
 
@@ -156,6 +156,7 @@ if  contains(saveWorkspace,{'y','j'})
     storeName = strcat('ID',num2str(m.id),'_workspace_ST',datestr(m.start_time,'yyyy_mm_dd_HHMMSS'));
     nameQuestion = strcat('Do you want to change the name of the file: "', storeName, '.mat" \n y/n: ');
     questionResult = input(nameQuestion,'s');
+    tic
     if contains(questionResult,{'y','j'})
         storeName = input("filename (without .mat): ",'s'); 
     end
@@ -165,13 +166,16 @@ if  contains(saveWorkspace,{'y','j'})
     
     store = fullfile(pwd, 'data', [storeName '.mat']);
     warning off
-    save(store);  
+    clear questionResult nameQuestion storeName  saveWorkspace id
+    save(store,'-regexp','^(?!(store|m)$).');  
     if contains(lastwarn ,'serialize object')
         warning(lastwarn);
     end
-    clear questionResult nameQuestion storeName store 
+    disp("Time save workspace: " + toc)
+else
+  clear  saveWorkspace
 end
-clear saveWorkspace
+
 %% 7 Own analysis: type your own commands
 ownCode = input('Execute own code (Y/N): ','s');
 if contains(ownCode,{'y','j'}) 
