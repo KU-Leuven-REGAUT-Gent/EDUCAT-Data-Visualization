@@ -9,7 +9,11 @@
 *.MAT
 *.asv
 *.ASV
+*.fig
+*.xlsx
+*.slx.autosave
 
 # Exclude JDBC
 mysql-connector-java-8.0.18/*
 jdbc/*
++classes/slprj/*
