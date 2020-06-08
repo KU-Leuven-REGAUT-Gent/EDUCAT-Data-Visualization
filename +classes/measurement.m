@@ -1,4 +1,5 @@
-classdef measurement 
+classdef measurement
+    
     % measurement summary
     % This class creates an object for a measurement.
     % The following data is stored in this object:
@@ -19,7 +20,7 @@ classdef measurement
     %Method summary:
     %*  connect                 -   Start a connection with the EDUCAT database on the Myriade server
  	%*  declaration             -	gets the maximum cycle count, measurements info and the list of sensors.
- 	%*  exportData              -   Each sensor data will be exported to the workspace. 
+ 	%*  extractionData              -   Each sensor data will be exported to the workspace. 
  	%*  get_dataset_DB          -   Get the dataset from the 'STP_measurement_dataset table'. 
  	%*  get_dataset_SD          -	in progress 
  	%*  get_measurement_fromSD  -   in progress 
@@ -57,7 +58,7 @@ classdef measurement
             obj.enableStoreMemory = false;
         end
         
-        function obj = connect(obj)
+        function obj = connect(obj,sort)
         % Start a connection with the EDUCAT database on the Myriade
         % server. 
         %
@@ -117,15 +118,15 @@ classdef measurement
                 'FROM `STP_measurements` ' ...
                 'LEFT JOIN `STP_measurement_dataset` ' ...
                 'ON `STP_measurements`.`id` = `STP_measurement_dataset`.`measurement_id` ' ...
-                'GROUP BY `STP_measurements`.`id` ' ...
-                'ORDER BY `id` DESC;'];
+                'GROUP BY `STP_measurements`.`id`' ...
+                'ORDER BY `' sort '` DESC;'];
             obj.list = select( obj.conn,sqlquery);
             
             % start time
-            obj.list.start_time = datetime(obj.list.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+            obj.list.start_time = datetime(obj.list.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss');
            
             % end time 
-            obj.list.end_time = datetime(obj.list.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+            obj.list.end_time = datetime(obj.list.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss');
         end
         
         function obj = set_measurement_ID(obj,measurement_id)
@@ -356,7 +357,7 @@ classdef measurement
    
 
                %% *********************** export data ***********************
-        function  exportData(obj)
+        function  extractionData(obj)
             %Each sensor data will be exported to the workspace.
             %The name of the variables will be in the following format:
             %   "IDxx_instxxx_sensorname"
@@ -377,6 +378,7 @@ classdef measurement
             cycleCount = (1:1:size(obj.instruments(1).data(1).values,1))';
             assignin('base',strcat('ID',num2str(obj.id),'_cycleCount'), cycleCount);
             info.measurementID= obj.id;
+            info.measurementDescription = obj.description;
             info.setupID= obj.setup_id;
             info.startTime= datestr(obj.start_time,'dd/mm/yyyy HH:MM:SS.FFF');
             info.endTime= datestr(obj.end_time,'dd/mm/yyyy HH:MM:SS.FFF');

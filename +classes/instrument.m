@@ -33,24 +33,24 @@ classdef instrument
                     obj.length = 5;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Actual speed","mm/s","int_16",maxCycleCount);
-                    obj.data(2) = classes.data("Turn","?","int_8",maxCycleCount);
-                    obj.data(3) = classes.data("Speed","?","int_8",maxCycleCount);
-                    obj.data(4) = classes.data("Profile","?","int_8",maxCycleCount);
+                    obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
+                    obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
+                    obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                 case 162 % A2
                     obj.length = 6;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Actual speed","mm/s","int_16",maxCycleCount);
-                    obj.data(2) = classes.data("Turn","?","int_8",maxCycleCount);
-                    obj.data(3) = classes.data("Speed","?","int_8",maxCycleCount);
-                    obj.data(4) = classes.data("Profile","?","int_8",maxCycleCount);
-                    obj.data(5) = classes.data("Mode","?","int_8",maxCycleCount);
+                    obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
+                    obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
+                    obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
+                    obj.data(5) = classes.data("Mode","number","int_8",maxCycleCount);
                 case 163 % A3
                     obj.length = 5;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Actual speed","mm/s","int_16",maxCycleCount);
-                    obj.data(2) = classes.data("Turn","?","int_8",maxCycleCount);
-                    obj.data(3) = classes.data("Speed","?","int_8",maxCycleCount);
-                    obj.data(4) = classes.data("Profile","?","int_8",maxCycleCount);
+                    obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
+                    obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
+                    obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                 case 177 % B1
                     obj.length = 26;
                     obj.data = classes.data.empty(0,obj.length);
@@ -83,7 +83,7 @@ classdef instrument
                     obj.data(2) = classes.data("latitude","degrees","float_32",maxCycleCount);
                     obj.data(3) = classes.data("hMSL","m","float_32",maxCycleCount);
                     obj.data(4) = classes.data("speed","m/s","float_32",maxCycleCount);
-                    obj.data(5) = classes.data("gnss","m/s","int_8",maxCycleCount);
+                    obj.data(5) = classes.data("reception","-","int_8",maxCycleCount);
                 case 194 % C2
                     error("Datatype unsupported - not yet implemented");
                 case 195 % C3

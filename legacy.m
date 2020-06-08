@@ -1,7 +1,8 @@
 %******************* EDUCAT visualization legacy ********************
 %{
 %                               Authors:
-%                Frederic Depuydt and Dimitri De Schuyter
+%                Frederic Depuydt, Dimitri De Schuyter, Mathieu Troch 
+%                               
 %
 %                               Company: 
 %                              KU Leuven  
@@ -78,7 +79,7 @@ clc
 close all
 import classes.*
 m = measurement();
-m = m.connect();
+m = m.connect('start_time'); % TODO add selection
 
 m.list
 
