@@ -281,6 +281,11 @@ classdef instrument
                     set(gca,'fontsize',20) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', 18);
+                    try
+                        sgtitle('Joystick Deflection Pattern','fontsize',20);
+                    catch
+                        suptitle('Joystick Deflection Pattern');
+                    end
                     plot(obj.data(2).values, obj.data(3).values,'+');
                     axis equal;
                     limValue = max(abs([obj.data(2).values; obj.data(3).values]))*1.1;
@@ -289,6 +294,39 @@ classdef instrument
                     end
                     xlabel(obj.data(2).name);
                     ylabel(obj.data(3).name);
+                    % *************** heatmap ****************
+                    % 5x5 grid heatmap
+                     cData = histcounts2(obj.data(2).values,obj.data(3).values,5);
+                    cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
+                    cData = cData/size(obj.data(2).values,1)*100; %
+                    
+                    limit = 127/(5/2)*floor(5/2);
+                    clusteredSpeed = linspace(limit,-limit,5);
+                    clusteredTurn = linspace(-limit,limit,5);
+                    % create heatmap
+                    figure
+                    h = heatmap(clusteredTurn,clusteredSpeed,cData);
+                    h.ColorLimits = [0 100];
+                    h.Title="5x5 joystick deflection Heat Map";
+                    
+                    colormap default
+                    % Adjustable heatmap
+                    % binning data
+                    gridSize =evalin('base', 'gridSize');
+                    cData = histcounts2(obj.data(2).values,obj.data(3).values,gridSize);
+                    cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
+                    cData = cData/size(obj.data(2).values,1)*100; %
+                    
+                    limit = 127/(gridSize/2)*floor(gridSize/2);
+                    clusteredSpeed = linspace(limit,-limit,gridSize);
+                    clusteredTurn = linspace(-limit,limit,gridSize);
+                    % create heatmap
+                    figure
+                    h = heatmap(clusteredTurn,clusteredSpeed,cData);
+                    h.ColorLimits = [0 100];
+                    h.Title = strcat(string(gridSize), "x", string(gridSize), " joystick deflection Heat Map");
+                    colormap default
+                    
                 case 162 % A2
                     subplotArray(1) = subplot(2,4,1:4);
                     obj.data(1).plot(startTime,true);
@@ -313,6 +351,12 @@ classdef instrument
                     set(gca,'fontsize',20) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', 18);
+                     try
+                        sgtitle('Joystick Deflection Pattern','fontsize',20);
+                    catch
+                      suptitle('Joystick Deflection Pattern'); 
+                    end    
+                   
                     plot(obj.data(2).values, obj.data(3).values,'+');
                     axis equal;
                     limValue = max(abs([obj.data(2).values; obj.data(3).values]));
@@ -321,6 +365,37 @@ classdef instrument
                     end
                     xlabel(obj.data(2).name);
                     ylabel(obj.data(3).name);
+                    % *************** heatmap ****************
+                    % 5x5 grid heatmap
+                     cData = histcounts2(obj.data(2).values,obj.data(3).values,5);
+                    cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
+                    cData = cData/size(obj.data(2).values,1)*100; %
+                    
+                    limit = 127/(5/2)*floor(5/2);
+                    clusteredSpeed = linspace(limit,-limit,5);
+                    clusteredTurn = linspace(-limit,limit,5);
+                    % create heatmap
+                    figure
+                    h = heatmap(clusteredTurn,clusteredSpeed,cData);
+                    h.ColorLimits = [0 100];
+                    h.Title = "5x5 joystick deflection Heat Map";
+                    colormap default
+                    % Adjustable heatmap
+                    % binning data
+                    gridSize =evalin('base', 'gridSize');
+                    cData = histcounts2(obj.data(2).values,obj.data(3).values,gridSize);
+                    cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
+                    cData = cData/size(obj.data(2).values,1)*100; %
+                    
+                    limit = 127/(gridSize/2)*floor(gridSize/2);
+                    clusteredSpeed = linspace(limit,-limit,gridSize);
+                    clusteredTurn = linspace(-limit,limit,gridSize);
+                    % create heatmap
+                    figure
+                    h = heatmap(clusteredTurn,clusteredSpeed,cData);
+                    h.ColorLimits = [0 100];
+                    h.Title = strcat(string(gridSize), "x", string(gridSize), " joystick deflection Heat Map");
+                    colormap default
                 case 163 % A3
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true);
@@ -508,11 +583,13 @@ classdef instrument
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime, 'convertfrom','posixtime'), ...
                         'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
-                    try
-                    sgtitle(Title,'fontsize',20);
-                    catch 
-                      suptitle(Title); 
-                    end    
+                    if obj.datatype ~= 161 && obj.datatype  ~= 162
+                        try
+                            sgtitle(Title,'fontsize',20);
+                        catch
+                            suptitle(Title);
+                        end
+                    end
                     pause(0.1)
         end
     end
