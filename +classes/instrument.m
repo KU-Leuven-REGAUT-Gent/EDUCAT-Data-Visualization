@@ -133,7 +133,13 @@ classdef instrument
                     obj.length = 2;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("OAS Calculated Value","","uint_8",maxCycleCount);
-                    obj.data(2) = classes.data("Booleans","","uint_8",maxCycleCount);
+                    obj.data(2) = classes.data("Booleans","","boolean",maxCycleCount);
+                case 242 % F1    
+                    obj.length = 3;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("OAS Calculated Value","","uint_8",maxCycleCount);
+                    obj.data(2) = classes.data("Booleans","","boolean",maxCycleCount);
+                    obj.data(3) = classes.data("Sensor activate bit","","boolean",maxCycleCount);
                 otherwise
                     error("Datatype unsupported");
             end

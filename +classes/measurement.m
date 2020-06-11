@@ -125,11 +125,16 @@ classdef measurement
                         'ON `STP_setups_users`.`user_id` = `USR_users`.`id` ' ...
                         'LEFT JOIN `STP_setups` ' ...
                         'ON `STP_setups_users`.`setup_id` = `STP_setups`.`id` ' ...
-                        'WHERE `STP_measurement_dataset`.`measurement_id` > 0 ' ...
+                        'WHERE `STP_measurement_dataset`.`measurement_id` >= 0 ' ...
                         'GROUP BY `STP_measurement_dataset`.`measurement_id` ' ...
                         'ORDER BY `' sort '` DESC;'];
-            obj.list = select( obj.conn,sqlquery);
+                    
+       
             
+            obj.list = select( obj.conn,sqlquery);
+            wrongID = obj.list.id ==  -2147483648;
+            obj.list.start_time(wrongID) = 0;
+            obj.list.end_time(wrongID) = 0;
             % start time
             obj.list.start_time = datetime(obj.list.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss');
            
@@ -295,6 +300,7 @@ classdef measurement
             if Limit > (obj.end_cycleCount-obj.start_cycleCount)
             Limit = obj.end_cycleCount-obj.start_cycleCount+1;
             end
+            obj.dataset_list  = [];
             for i=obj.start_cycleCount:Limit:obj.end_cycleCount
                 endLimit = i+Limit ;
                 if i+Limit > obj.end_cycleCount-1

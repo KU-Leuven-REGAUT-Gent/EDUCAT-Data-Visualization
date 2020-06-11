@@ -12,35 +12,38 @@ classdef data
             obj.name = name;  
             obj.unit = unit;
             switch datatype %% ENUMERATING to prevent String compares during live loop
-                case "int_8"
+                case "boolean"
                     obj.datatype = 0;
                     obj.values = NaN(maxCycleCount,1);
+                case "int_8"
+                    obj.datatype = 1;
+                    obj.values = NaN(maxCycleCount,1);
                 case "uint_8"
-                    obj.datatype = 1;  
+                    obj.datatype = 2;  
                     obj.values = NaN(maxCycleCount,1);
                 case "int_16"
-                    obj.datatype = 2;
-                    obj.values = NaN(maxCycleCount,1);
-                case "uint_16"
                     obj.datatype = 3;
                     obj.values = NaN(maxCycleCount,1);
-                case "iint_32"
+                case "uint_16"
                     obj.datatype = 4;
                     obj.values = NaN(maxCycleCount,1);
-                case "uint_32"
+                case "iint_32"
                     obj.datatype = 5;
                     obj.values = NaN(maxCycleCount,1);
-                case "float_32"
+                case "uint_32"
                     obj.datatype = 6;
                     obj.values = NaN(maxCycleCount,1);
-                case "int_64"
+                case "float_32"
                     obj.datatype = 7;
                     obj.values = NaN(maxCycleCount,1);
-                case "uint_64"
+                case "int_64"
                     obj.datatype = 8;
                     obj.values = NaN(maxCycleCount,1);
-                case "float_64"
+                case "uint_64"
                     obj.datatype = 9;
+                    obj.values = NaN(maxCycleCount,1);
+                case "float_64"
+                    obj.datatype = 10;
                     obj.values = NaN(maxCycleCount,1);
                 otherwise
                     error("MATLAB Datatype not supported")
@@ -49,34 +52,34 @@ classdef data
         end
         function obj = add_value(obj,cyclecounter_list, blob)
             switch obj.datatype %% ENUMERATING to prevent String compares during live loop
-                case 0 %int_8
+                case 1 %int_8
                     reOut = reshape(blob',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'int8'); 
-                case 1 %uint_8
+                case 2 %uint_8
                     reOut = reshape(blob',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'uint8');
-                case 2 %int_16
+                case 3 %int_16
                     reOut = reshape(blob(:,2:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'int16');
-                case 3 %uint_16
+                case 4 %uint_16
                     reOut = reshape(blob(:,2:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'uint16');
-                case 4 %int_32
+                case 5 %int_32
                     reOut = reshape(blob(:,4:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'int32');
-                case 5 %uint_32
+                case 6 %uint_32
                     reOut = reshape(blob(:,4:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'uint32');
-                case 6 %float_32
+                case 7 %float_32
                     reOut = reshape(blob(:,4:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'single');
-                case 7 %int_64
+                case 8 %int_64
                     reOut = reshape(blob(:,8:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'int64');
-                case 8 %uint_64
+                case 9 %uint_64
                     reOut = reshape(blob(:,8:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'uint64');
-                case 9 %float_64
+                case 10 %float_64
                     reOut = reshape(blob(:,8:-1:1)',1,[]);
                     obj.values(cyclecounter_list) = typecast(reOut,'double');
                     %obj.values = typecast(blob(8:-1:1),'double');
