@@ -371,6 +371,10 @@ classdef measurement
    
 
                %% *********************** export data ***********************
+        function mobj = extractionMobject(obj)
+            mobj = obj;
+            mobj.conn = [];
+        end
         function  extractionData(obj)
             %Each sensor data will be exported to the workspace.
             %The name of the variables will be in the following format:
