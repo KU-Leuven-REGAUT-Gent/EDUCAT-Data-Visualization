@@ -337,41 +337,96 @@ classdef instrument
                     ylabel(obj.data(3).name);
                     % *************** heatmap ****************
                     % 5x5 grid heatmap
-                    R = 100;
+                    tic
+                    R = 128;
                     XgridEdges = -R:(R*2)/5:R;
                     YgridEdges =-R:(R*2)/5:R;
                     cData = histcounts2(obj.data(2).values,obj.data(3).values,XgridEdges,YgridEdges);
+                    cData(cData == 0) =nan;
                     cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
-                    cData = cData/size(obj.data(2).values,1)*100; %
-                    
-                    limit = 127/(5/2)*floor(5/2);
+                    cData = cData/size(obj.data(2).values,1)*100; %                  
+                    limit = R/(5/2)*floor(5/2);
                     clusteredSpeed = linspace(limit,-limit,5);
                     clusteredTurn = linspace(-limit,limit,5);
                     % create heatmap
-                    figure
+                    figure;
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', 18);
                     h = heatmap(clusteredTurn,clusteredSpeed,cData);
                     h.ColorLimits = [0 100];
                     h.Title="5x5 joystick deflection Heat Map";
+                    h.ColorLimits = [0 100];
+                    h.CellLabelFormat = '%.3f';
+                    h.ColorMethod = 'none';
+                    h.XLabel = 'turn';
+                    h.YLabel = 'speed';
+                    h.FontSize = 18;
+                    h.MissingDataLabel = 0;
                     colormap default
-                    
+                    disp("elapsed time for 5x5 heatmap: " + toc + "s")
+                                       
                     % ------ Adjustable heatmap --------
                     % binning data
+                    tic
                     gridSize =evalin('base', 'gridSize');
                     XgridEdges = -R:(R*2)/gridSize:R;
                     YgridEdges =-R:(R*2)/gridSize:R;
                     cData = histcounts2(obj.data(2).values,obj.data(3).values,XgridEdges,YgridEdges);
+                    cData(cData == 0) =nan;
                     cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
                     cData = cData/size(obj.data(2).values,1)*100; %
+                    % cData = round(cData,3,'significant');
                     
-                    limit = 127/(gridSize/2)*floor(gridSize/2);
+                    limit = R/(gridSize/2)*floor(gridSize/2);
                     clusteredSpeed = linspace(limit,-limit,gridSize);
+                    clusteredSpeed = round(clusteredSpeed,3);
                     clusteredTurn = linspace(-limit,limit,gridSize);
+                    clusteredTurn = round(clusteredTurn,3);
+                    
                     % create heatmap
-                    figure
+                    figure;
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', 18);
                     h = heatmap(clusteredTurn,clusteredSpeed,cData);
                     h.ColorLimits = [0 100];
+                    h.CellLabelFormat = '%.3f';
+                    h.ColorMethod = 'none';
+                    %h.ColorScaling = 'log';
                     h.Title = strcat(string(gridSize), "x", string(gridSize), " joystick deflection Heat Map");
+                    h.XLabel = 'turn';
+                    h.YLabel = 'speed';
+                    h.FontSize = 18;
+                    h.MissingDataLabel = 0;
                     colormap default
+                    disp("elapsed time for " + gridSize + "x" + gridSize + " heatmap: " + toc + "s") 
+                    
+%                     % ******** test Grid ********
+%                     R = 128;
+%                        figure()
+%                     hold on
+%                     set(gca,'fontsize',20) % set fontsize of the plot to 20
+%                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+%                     set(0, 'DefaultAxesFontSize', 18);
+%                     try
+%                         sgtitle('Joystick Deflection Pattern','fontsize',20);
+%                     catch
+%                         suptitle('Joystick Deflection Pattern');
+%                     end
+%                     plot(obj.data(2).values, obj.data(3).values,'+');
+%                     
+%                     plot( [XgridEdges;XgridEdges], repmat( [-R;R], 1, numel( XgridEdges )), 'Color', 0.8*[1,1,1] ) ;
+%                     plot( repmat( [-R;R], 1, numel( YgridEdges )), [YgridEdges;YgridEdges], 'Color', 0.8*[1,1,1] ) ;
+%                     hold off
+%                     axis equal;
+%                     limValue = 128;%max(abs([obj.data(2).values; obj.data(3).values]))*1.1;
+%                     if( limValue >0)
+%                         axis ([-limValue limValue -limValue limValue]);
+%                     end
+%                     xlabel(obj.data(2).name);
+%                     ylabel(obj.data(3).name);
+                   
                     
                 case 162 % A2
                     subplotArray(1) = subplot(2,4,1:4);
@@ -414,40 +469,66 @@ classdef instrument
                    
                     % *************** heatmap ****************
                     % 5x5 grid heatmap
+                    tic
                     R = 100;
                     XgridEdges = -R:(R*2)/5:R;
                     YgridEdges =-R:(R*2)/5:R;
                     cData = histcounts2(obj.data(2).values,obj.data(3).values,XgridEdges,YgridEdges);
+                    cData(cData == 0) =nan;
                     cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
                     cData = cData/size(obj.data(2).values,1)*100; %                 
                     limit = R/(5/2)*floor(5/2);
                     clusteredSpeed = linspace(limit,-limit,5);
                     clusteredTurn = linspace(-limit,limit,5);
                     % create heatmap
-                    figure
+                    figure;
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', 18);
                     h = heatmap(clusteredTurn,clusteredSpeed,cData);
                     h.ColorLimits = [0 100];
                     h.Title = "5x5 joystick deflection Heat Map";
+                    h.ColorLimits = [0 100];
+                    h.CellLabelFormat = '%.3f';
+                    h.ColorMethod = 'none';
+                    h.XLabel = 'turn';
+                    h.YLabel = 'speed';
+                    h.FontSize = 18;
+                    h.MissingDataLabel = 0;
                     colormap default
+                    disp("elapsed time for 5x5 heatmap: " + toc + "s")
                     
                     % ------ Adjustable heatmap --------
                     % binning data
+                    tic
                     gridSize =evalin('base', 'gridSize');
                     XgridEdges = -R:(R*2)/gridSize:R;
                     YgridEdges =-R:(R*2)/gridSize:R;
                     cData = histcounts2(obj.data(2).values,obj.data(3).values,XgridEdges,YgridEdges);
+                    cData(cData == 0) =nan;
                     cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
                     cData = cData/size(obj.data(2).values,1)*100; %
-                    
                     limit = R/(gridSize/2)*floor(gridSize/2);
                     clusteredSpeed = linspace(limit,-limit,gridSize);
                     clusteredTurn = linspace(-limit,limit,gridSize);
                     % create heatmap
-                    figure
+                    figure;
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', 18);
                     h = heatmap(clusteredTurn,clusteredSpeed,cData);
                     h.ColorLimits = [0 100];
                     h.Title = strcat(string(gridSize), "x", string(gridSize), " joystick deflection Heat Map");
-                    colormap default
+                    h.ColorLimits = [0 100];
+                    h.CellLabelFormat = '%.3f';
+                    h.ColorMethod = 'none';
+                    h.XLabel = 'turn';
+                    h.YLabel = 'speed';
+                    h.FontSize = 18;
+                    h.MissingDataLabel = 0;
+                    colormap default                    
+                    disp("elapsed time for " + gridSize + "x" + gridSize + " heatmap: " + toc + "s") 
+                    
                 case 163 % A3
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true,true);
@@ -486,40 +567,66 @@ classdef instrument
                                         
                     % *************** heatmap ****************
                     % 5x5 grid heatmap
+                    tic
                     R = 100;
                     XgridEdges = -R:(R*2)/5:R;
                     YgridEdges =-R:(R*2)/5:R;
                     cData = histcounts2(obj.data(2).values,obj.data(3).values,XgridEdges,YgridEdges);
+                    cData(cData == 0) =nan;
                     cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
                     cData = cData/size(obj.data(2).values,1)*100; %
-                    
                     limit = 100/(5/2)*floor(5/2);
                     clusteredSpeed = linspace(limit,-limit,5);
                     clusteredTurn = linspace(-limit,limit,5);
                     % create heatmap
-                    figure
+                    figure;
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    %set(0, 'DefaultAxesFontSize', 18);
                     h = heatmap(clusteredTurn,clusteredSpeed,cData);
                     h.ColorLimits = [0 100];
                     h.Title = "5x5 joystick deflection Heat Map";
+                    h.ColorLimits = [0 100];
+                    h.CellLabelFormat = '%.3f';
+                    h.ColorMethod = 'none';
+                    h.XLabel = 'turn';
+                    h.YLabel = 'speed';
+                    h.FontSize = 18;
+                    h.MissingDataLabel = 0;
                     colormap default
+                    disp("elapsed time for 5x5 heatmap: " + toc + "s")
+                    
                     % ------- Adjustable heatmap --------
                     % binning data
+                    tic
                     gridSize =evalin('base', 'gridSize'); 
                     XgridEdges = -R:(R*2)/gridSize:R;
                     YgridEdges =-R:(R*2)/gridSize:R;
                     cData = histcounts2(obj.data(2).values,obj.data(3).values,XgridEdges,YgridEdges);
+                    cData(cData == 0) =nan;
                     cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
                     cData = cData/size(obj.data(2).values,1)*100; %
-                    
                     limit = 100/(gridSize/2)*floor(gridSize/2);
                     clusteredSpeed = linspace(limit,-limit,gridSize);
                     clusteredTurn = linspace(-limit,limit,gridSize);
                     % create heatmap
-                    figure
+                    figure;
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', 18);
                     h = heatmap(clusteredTurn,clusteredSpeed,cData);
                     h.ColorLimits = [0 100];
                     h.Title = strcat(string(gridSize), "x", string(gridSize), " joystick deflection Heat Map");
+                    h.ColorLimits = [0 100];
+                    h.CellLabelFormat = '%.3f';
+                    h.ColorMethod = 'none';
+                    h.XLabel = 'turn';
+                    h.YLabel = 'speed';
+                    h.FontSize = 18;
+                    h.MissingDataLabel = 0;
                     colormap default
+                    disp("elapsed time for " + gridSize + "x" + gridSize + " heatmap: " + toc + "s") 
+                    
                 case 177 % B1
                     subplotArray(1) = subplot(3,1,1);
                     obj.data(1).plot(startTime,true,false);
