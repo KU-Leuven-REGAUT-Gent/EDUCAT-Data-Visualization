@@ -70,7 +70,7 @@ classdef measurement
         %password on your pc. if you have chosen to save the password, it
         %will start the connection immediately without asking for the
         %password.
-            
+                       
             % No database object necessary
             % Install https://dev.mysql.com/downloads/file/?id=490495
             if isfile("jdbc/mysql-connector-java-8.0.18.jar")
@@ -381,13 +381,30 @@ classdef measurement
         end
         %% *************** plot all instrument *******************
         
-        function obj = plot_all(obj)
+        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale)
            %All the instruments will be plotted
             for i = 1:obj.n_instruments
-                obj.instruments(i).plot_all(obj.id,obj.start_time);
+                obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale);
             end
         end
-   
+        %% ***************Filtering *******************  
+        function obj = filter(obj,deadZone,FilterUnit)
+           %All the instruments will be plotted
+            for i = 1:  obj.n_instruments
+                switch obj.instruments(i).datatype
+                    case 161 % A1 JOYSTICK_DX2_OUTPUT
+                        obj.instruments(i) = obj.instruments(i).filter(deadZone,FilterUnit);
+                        break
+                    case 162 % A2 JOYSTICK_PG_OUTPUT
+                        obj.instruments(i)= obj.instruments(i).filter(deadZone,FilterUnit);
+                        break
+                    case 163 % A3 JOYSTICK_LINX_OUTPUT
+                        obj.instruments(i) = obj.instruments(i).filter(deadZone,FilterUnit);
+                        break
+                    otherwise
+                end
+           end
+        end    
 
                %% *********************** export data ***********************
         function mobj = extractionMobject(obj)

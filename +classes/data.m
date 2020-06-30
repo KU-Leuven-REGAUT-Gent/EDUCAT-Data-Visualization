@@ -92,6 +92,10 @@ classdef data
             
             
         end
+        function obj = filteredData(obj,data)
+            obj.values(:) = data;
+        end
+        
         function obj = resize(obj)
             %obj.value = obj.value;
         end
