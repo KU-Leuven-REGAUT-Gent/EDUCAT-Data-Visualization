@@ -48,11 +48,11 @@ classdef data
                 otherwise
                     error("MATLAB Datatype not supported")
             end
-            %obj.resize();
         end
+        
         function obj = add_value(obj,cyclecounter_list, blob)
             switch obj.datatype %% ENUMERATING to prevent String compares during live loop
-                case 0 %boolean
+                case 0 %boolean/already converted
                     obj.values(cyclecounter_list) = blob;
                 case 1 %int_8
                     reOut = reshape(blob',1,[]);
@@ -92,8 +92,8 @@ classdef data
             
             
         end
-        function obj = filteredData(obj,data)
-            obj.values(:) = data;
+        function obj = filteredData(obj,cyclecounter,data)
+            obj.values(cyclecounter) = data;
         end
         
         function obj = resize(obj)
@@ -103,14 +103,14 @@ classdef data
             time = seconds(0:(size(obj.values,1)-1))*0.020 + startTime;
             plot(time,obj.values,'LineWidth',2);
             if enableTitle
-                title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',14);
+                title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
             end
             %ylim([min([0 obj.values],[],'all') (1.5*max(obj.values,[],'all'))]);
             xlim(([min(time) (max(time))]));
             if enableXlabel
-                xlabel('Time (UTC)','fontsize',14);
+                xlabel('Time (UTC)','fontsize',20);
             end
-            ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',14);
+            ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
         end
     end
 end
