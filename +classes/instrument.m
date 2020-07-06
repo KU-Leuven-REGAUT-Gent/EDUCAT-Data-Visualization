@@ -40,7 +40,7 @@ classdef instrument
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(6) = classes.data("baut","baut/measurement","boolean",1);
+                    obj.data(6) = classes.data("baut","bouts/measurement","boolean",1);
                 case 162 % A2 JOYSTICK_PG_OUTPUT
                     obj.length = 6;
                     obj.data = classes.data.empty(0,obj.length);
@@ -50,7 +50,7 @@ classdef instrument
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("Mode","number","int_8",maxCycleCount);
                     obj.data(6) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(7) = classes.data("baud","baut/measurement","boolean",1);
+                    obj.data(7) = classes.data("baud","bouts/measurement","boolean",1);
                 case 163 % A3 JOYSTICK_LINX_OUTPUT
                     obj.length = 5;
                     obj.data = classes.data.empty(0,obj.length);
@@ -59,7 +59,7 @@ classdef instrument
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(6) = classes.data("baud","baut/measurement","boolean",1);
+                    obj.data(6) = classes.data("baud","bouts/measurement","boolean",1);
                 case 177 % B1 IMU_9AXIS_ROT_VEC
                     obj.length = 26;
                     obj.data = classes.data.empty(0,obj.length);
@@ -495,7 +495,7 @@ classdef instrument
                     obj.data(5).plot(startTime,true,false);
                     xL=xlim;
                     yL=ylim;
-                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " baut/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
                     obj.data(2).plot(startTime,true,false);
                     subplotArray(3) =  subplot(3,1,3);
@@ -520,7 +520,7 @@ classdef instrument
                         obj.data(9).plot(startTime,true,false);
                         xL=xlim;
                         yL=ylim;
-                        text(xL(2),1.2*yL(2),string(obj.data(10).values) + " baut/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                        text(xL(2),1.2*yL(2),string(obj.data(10).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
                         obj.data(7).plot(startTime,true,false);
                         subplotArray(3) =  subplot(3,1,3);
@@ -591,7 +591,7 @@ classdef instrument
                     obj.data(6).plot(startTime,true,false);
                     xL=xlim;
                     yL=ylim;
-                    text(xL(2),1.2*yL(2),string(obj.data(7).values) + " baut/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(2),1.2*yL(2),string(obj.data(7).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
                     obj.data(2).plot(startTime,true,false);
                     subplotArray(3) =  subplot(3,1,3);
@@ -616,7 +616,7 @@ classdef instrument
                         obj.data(10).plot(startTime,true,false);
                         xL=xlim;
                         yL=ylim;
-                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " baut/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
                         obj.data(8).plot(startTime,true,false);
                         subplotArray(3) =  subplot(3,1,3);
@@ -685,7 +685,7 @@ classdef instrument
                     obj.data(5).plot(startTime,true,false);
                     xL=xlim;
                     yL=ylim;
-                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " baut/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
                     obj.data(2).plot(startTime,true,false);
                     subplotArray(3) =  subplot(3,1,3);
@@ -710,7 +710,7 @@ classdef instrument
                         obj.data(9).plot(startTime,true,false);
                         xL=xlim;
                         yL=ylim;
-                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " baut/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
+                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
                         subplotArray(2) = subplot(3,1,2);
                         obj.data(7).plot(startTime,true,false);
                         subplotArray(3) =  subplot(3,1,3);
