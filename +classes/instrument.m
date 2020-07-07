@@ -1,3 +1,4 @@
+
 classdef instrument
     % instrument summary
     % This object contains all the sensor data
