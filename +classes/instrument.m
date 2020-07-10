@@ -295,11 +295,11 @@ classdef instrument
                     
                     if  sum(filter)>0
                         if FilterUnit % percentage
-                            obj.data(7) = classes.data("Turn [" + deadZone + "%]" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed [" + deadZone + "%]" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(7) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                         else  % value
-                            obj.data(7) = classes.data("Turn [>" + deadZone + "]" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed [>" + deadZone + "]" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(7) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
                     else
                         obj.filtered = false;
@@ -332,11 +332,11 @@ classdef instrument
                     
                     if sum(filter)>0
                         if FilterUnit % percentage
-                            obj.data(8) = classes.data("Turn [" + deadZone + "%]" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed [" + deadZone + "%]" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                         else % value
-                            obj.data(8) = classes.data("Turn [>" + deadZone + "]" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed [>" + deadZone + "]" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
                     else
                         obj.filtered = false;
@@ -369,11 +369,11 @@ classdef instrument
                     if sum(filter)>0
                         % declaration of filtered data
                         if FilterUnit % percentage
-                            obj.data(7) = classes.data("Turn [" + deadZone + "%]" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed [" + deadZone + "%]" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(7) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                         else % value
-                            obj.data(7) = classes.data("Turn [>" + deadZone + "]" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed [>" + deadZone + "]" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(7) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
                     else
                         obj.filtered = false;
@@ -441,7 +441,7 @@ classdef instrument
             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
             set(0, 'DefaultAxesFontSize', fontSize);
             switch obj.datatype
-                case 161 % A1
+                case 161 % A1 JOYSTICK DX2
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) =  subplot(2,3,4);
@@ -449,7 +449,7 @@ classdef instrument
                     subplotArray(3) =  subplot(2,3,5);
                     obj.data(3).plot(startTime,true,false,false);
                     subplotArray(4) =  subplot(2,3,6);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,true);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -490,14 +490,14 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,true);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false);
+                    obj.data(3).plot(startTime,true,true,true);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -515,14 +515,14 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(9).plot(startTime,true,false,false);
+                        obj.data(9).plot(startTime,true,false,true);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(10).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(7).plot(startTime,true,false,false);
+                        obj.data(7).plot(startTime,true,false,true);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(8).plot(startTime,true,true,false);
+                        obj.data(8).plot(startTime,true,true,true);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -534,7 +534,7 @@ classdef instrument
                         linkaxes(subplotArray,'x');
                     end
                     
-                case 162 % A2
+                case 162 % A2 JOYSTICK PG
                     subplotArray(1) = subplot(2,4,1:4);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) = subplot(2,4,5);
@@ -542,9 +542,9 @@ classdef instrument
                     subplotArray(3) = subplot(2,4,6);
                     obj.data(3).plot(startTime,true,false,false);
                     subplotArray(4) = subplot(2,4,7);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,true);
                     subplotArray(5) = subplot(2,4,8);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,true);
                     Title =[obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
@@ -586,14 +586,14 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(6).plot(startTime,true,false,false);
+                    obj.data(6).plot(startTime,true,false,true);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(7).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false);
+                    obj.data(3).plot(startTime,true,true,true);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -611,14 +611,14 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,false);
+                        obj.data(10).plot(startTime,true,false,true);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,false);
+                        obj.data(8).plot(startTime,true,false,true);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,false);
+                        obj.data(9).plot(startTime,true,true,true);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -630,7 +630,7 @@ classdef instrument
                         linkaxes(subplotArray,'x');
                     end
                     
-                case 163 % A3
+                case 163 % A3 JOYSTICK LINX
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) =subplot(2,3,4);
@@ -638,7 +638,7 @@ classdef instrument
                     subplotArray(3) =subplot(2,3,5);
                     obj.data(3).plot(startTime,true,false,false);
                     subplotArray(4) =subplot(2,3,6);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,true);
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
@@ -680,14 +680,14 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,true);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false);
+                    obj.data(3).plot(startTime,true,true,true);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -705,14 +705,14 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(9).plot(startTime,true,false,false);
+                        obj.data(9).plot(startTime,true,false,true);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(7).plot(startTime,true,false,false);
+                        obj.data(7).plot(startTime,true,false,true);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(8).plot(startTime,true,true,false);
+                        obj.data(8).plot(startTime,true,true,true);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -724,7 +724,7 @@ classdef instrument
                         linkaxes(subplotArray,'x');
                     end
                     
-                case 177 % B1
+                case 177 % B1 IMU 9AXIS
                     subplotArray(1) = subplot(3,1,1);
                     obj.data(1).plot(startTime,true,false,false);
                     subplotArray(2) =subplot(3,1,2);
@@ -751,7 +751,7 @@ classdef instrument
                     subplotArray(3) = subplot(3,1,3);
                     obj.data(6).plot(startTime,true,true,false);
                     linkaxes(subplotArray,'x');
-                case 178 % B2
+                case 178 % B2 IMU 6AXIS
                     subplotArray(1) = subplot(3,1,1);
                     obj.data(1).plot(startTime,true,false,false);
                     subplotArray(2) = subplot(3,1,2);
@@ -778,7 +778,7 @@ classdef instrument
                     subplotArray(3) =subplot(3,1,3);
                     obj.data(6).plot(startTime,true,true,false);
                     linkaxes(subplotArray,'x');
-                case 193 % C1
+                case 193 % C1 GPS MIN
                     subplotArray(1) = subplot(2,1,1);
                     obj.data(1).plot(startTime,true,false,false);
                     subplotArray(2) = subplot(2,1,2);
@@ -816,22 +816,25 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     plot(obj.data(1).values, obj.data(2).values,'+');
-                    axis equal;
-                    limValue = max(abs([obj.data(1).values; obj.data(2).values]))*1.1;
-                    if( limValue >0)
-                        axis ([-limValue limValue -limValue limValue]);
-                    end
+%                     xMin = min(abs(obj.data(1).values))*0.9;
+%                     xMax = max(abs(obj.data(1).values))*1.1;
+%                     
+%                     yMin = min(abs(obj.data(2).values))*0.9;
+%                     yMax = max(abs(obj.data(2).values))*1.1;
+%                     
+%                     axis ([-xMin xMax -yMin yMax]);
+                   
                     xlabel(obj.data(1).name);
                     ylabel(obj.data(2).name);
-                case 194 % C2
+                case 194 % C2 GPS STATUS
                     disp([obj.name " is not yet programmed"]);
-                case 195 % C3
+                case 195 % C3 GPS DATA STATUS
                     disp([obj.name " is not yet programmed"]);
-                case 209 % D1
+                case 209 % D1 CAN DISTANCE NODES (US)
                     obj.data(1).plot(startTime,false,true,false);
-                case 210 % D2
+                case 210 % D2 CAN DISTANCE NODES (IR)
                     obj.data(1).plot(startTime,false,true,false);
-                case 211 % D3
+                case 211 % D3 CAN DISTANCE NODES (US+IR)
                     subplotArray(1) =subplot(2,2,1:2);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) =subplot(2,2,3);
@@ -839,7 +842,7 @@ classdef instrument
                     subplotArray(3) = subplot(2,2,4);
                     obj.data(3).plot(startTime,true,false,false);
                     linkaxes(subplotArray,'x');
-                case 212 % D4
+                case 212 % D4 CAN DISTANCE NODES (US+2IR)
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) = subplot(2,3,4);
@@ -849,7 +852,7 @@ classdef instrument
                     subplotArray(4) = subplot(2,3,5);
                     obj.data(4).plot(startTime,true,false,false);
                     linkaxes(subplotArray,'x');
-                case 213 % D5
+                case 213 % D5 CAN DISTANCE NODES (US+3IR)
                     subplotArray(1) =subplot(2,4,1:4);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) = subplot(2,4,5);
@@ -861,7 +864,7 @@ classdef instrument
                     subplotArray(5) = subplot(2,4,8);
                     obj.data(5).plot(startTime,true,false,false);
                     linkaxes(subplotArray,'x');
-                case 214 % D6
+                case 214 % D6 CAN DISTANCE NODES (4IR)
                     subplotArray(1) = subplot(2,4,1:4);
                     obj.data(1).plot(startTime,true,true,false);
                     subplotArray(2) = subplot(2,4,5);
@@ -873,54 +876,54 @@ classdef instrument
                     subplotArray(5) = subplot(2,4,8);
                     obj.data(5).plot(startTime,true,false,false);
                     linkaxes(subplotArray,'x');
-                case 215 % D7
+                case 215 % D7 CAN DISTANCE NODES (4IR) Only Calculated Value
                     obj.data(1).plot(startTime,false,true,false);
-                case 225 % E1
+                case 225 % E1 Real Time Clock
                     obj.data(1).plot(startTime,false,true,false);
-                case 241 % F1
+                case 241 % F1 USB AD as Instrument
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(1).plot(startTime,true,false,false);
+                    obj.data(1).plot(startTime,true,false,true);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,true);
                     s = get(gca, 'Position');
                     set(gca, 'Position', [s(1), s(2), s(3), s(4) * 0.9])
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(4).plot(startTime,true,true,false);
+                    obj.data(4).plot(startTime,true,true,true);
                     s = get(gca, 'Position');
                     set(gca, 'Position', [s(1), s(2), s(3), s(4) * 0.9])
                     linkaxes(subplotArray,'x');
-                case 242 % F2
+                case 242 % F2 USB AD as Instrument + Sensor activate bits
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(1).plot(startTime,true,false,false);
+                    obj.data(1).plot(startTime,true,false,true);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,true);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(4).plot(startTime,true,true,false);
+                    obj.data(4).plot(startTime,true,true,true);
                     linkaxes(subplotArray,'x');
                     figure()
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,2,1);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,true);
                     subplotArray(2) = subplot(4,2,2);
-                    obj.data(6).plot(startTime,true,false,false);
+                    obj.data(6).plot(startTime,true,false,true);
                     subplotArray(3) = subplot(4,2,3);
-                    obj.data(7).plot(startTime,true,false,false);
+                    obj.data(7).plot(startTime,true,false,true);
                     subplotArray(4) = subplot(4,2,4);
-                    obj.data(8).plot(startTime,true,true,false);
+                    obj.data(8).plot(startTime,true,true,true);
                     subplotArray(5) = subplot(4,2,5);
-                    obj.data(9).plot(startTime,true,false,false);
+                    obj.data(9).plot(startTime,true,false,true);
                     subplotArray(6) = subplot(4,2,6);
-                    obj.data(10).plot(startTime,true,false,false);
+                    obj.data(10).plot(startTime,true,false,true);
                     subplotArray(7) = subplot(4,2,7);
-                    obj.data(11).plot(startTime,true,false,false);
+                    obj.data(11).plot(startTime,true,false,true);
                     subplotArray(8) = subplot(4,2,8);
-                    obj.data(12).plot(startTime,true,true,false);
+                    obj.data(12).plot(startTime,true,true,true);
                     linkaxes(subplotArray,'x');
             end
             Title = [obj.name newline  '- ' ...
