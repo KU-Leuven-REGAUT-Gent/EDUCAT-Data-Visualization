@@ -99,13 +99,17 @@ classdef data
         function obj = resize(obj)
             %obj.value = obj.value;
         end
-        function obj = plot(obj,startTime,enableTitle,enableXlabel)
+        function obj = plot(obj,startTime,enableTitle,enableXlabel,yEnLim)
             time = seconds(0:(size(obj.values,1)-1))*0.020 + startTime;
             plot(time,obj.values,'LineWidth',2);
             if enableTitle
                 title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
             end
-            %ylim([min([0 obj.values],[],'all') (1.5*max(obj.values,[],'all'))]);
+            if yEnLim && obj.datatype ~= 0
+                ylim([min([-0.1; obj.values],[],'all')*1.1 (1.1*max(obj.values,[],'all'))]);
+            elseif obj.datatype == 0
+                ylim([-0.1 1.1]);
+            end
             xlim(([min(time) (max(time))]));
             if enableXlabel
                 xlabel('Time (UTC)','fontsize',20);
