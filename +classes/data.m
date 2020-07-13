@@ -114,7 +114,13 @@ classdef data
             if enableXlabel
                 xlabel('Time (UTC)','fontsize',20);
             end
-            ylabel([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
+            if strlength(char(obj.name))> 30
+                yText = split(extractAfter(char(obj.name),strlength(char(obj.name))/2),['-',' ']);
+                yText = char(yText(end));
+            else
+                yText = char(obj.name);
+            end
+            ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
         end
     end
 end

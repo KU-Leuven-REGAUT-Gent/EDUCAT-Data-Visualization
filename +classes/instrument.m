@@ -259,22 +259,22 @@ classdef instrument
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:8));
                 case 241 % F1
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1));
-                    obj.data(2) = obj.data(2).add_value(cyclecounter_list, bitand(blob(:,2),1));
-                    obj.data(3) = obj.data(3).add_value(cyclecounter_list, bitand(blob(:,2),2));
-                    obj.data(4) = obj.data(4).add_value(cyclecounter_list, bitand(blob(:,2),4));
+                    obj.data(2) = obj.data(2).add_value(cyclecounter_list, bitand(blob(:,2),1)==1);
+                    obj.data(3) = obj.data(3).add_value(cyclecounter_list, bitand(blob(:,2),2)==2);
+                    obj.data(4) = obj.data(4).add_value(cyclecounter_list, bitand(blob(:,2),4)==4);
                 case 242 % F2
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1));
-                    obj.data(2) = obj.data(2).add_value(cyclecounter_list, bitand(blob(:,2),1));
-                    obj.data(3) = obj.data(3).add_value(cyclecounter_list, bitand(blob(:,2),2));
-                    obj.data(4) = obj.data(4).add_value(cyclecounter_list, bitand(blob(:,2),4));
-                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, bitand(blob(:,3),1));
-                    obj.data(6) = obj.data(6).add_value(cyclecounter_list, bitand(blob(:,3),2));
-                    obj.data(7) = obj.data(7).add_value(cyclecounter_list, bitand(blob(:,3),4));
-                    obj.data(8) = obj.data(8).add_value(cyclecounter_list, bitand(blob(:,3),8));
-                    obj.data(9) = obj.data(9).add_value(cyclecounter_list, bitand(blob(:,3),16));
-                    obj.data(10) = obj.data(10).add_value(cyclecounter_list, bitand(blob(:,3),32));
-                    obj.data(11) = obj.data(11).add_value(cyclecounter_list, bitand(blob(:,3),64));
-                    obj.data(12) = obj.data(12).add_value(cyclecounter_list, bitand(blob(:,3),128));
+                    obj.data(2) = obj.data(2).add_value(cyclecounter_list, bitand(blob(:,2),1)==1);
+                    obj.data(3) = obj.data(3).add_value(cyclecounter_list, bitand(blob(:,2),2)==2);
+                    obj.data(4) = obj.data(4).add_value(cyclecounter_list, bitand(blob(:,2),4)==4);
+                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, bitand(blob(:,3),1)==1);
+                    obj.data(6) = obj.data(6).add_value(cyclecounter_list, bitand(blob(:,3),2)==2);
+                    obj.data(7) = obj.data(7).add_value(cyclecounter_list, bitand(blob(:,3),4)==4);
+                    obj.data(8) = obj.data(8).add_value(cyclecounter_list, bitand(blob(:,3),8)==8);
+                    obj.data(9) = obj.data(9).add_value(cyclecounter_list, bitand(blob(:,3),16)==16);
+                    obj.data(10) = obj.data(10).add_value(cyclecounter_list, bitand(blob(:,3),32)==32);
+                    obj.data(11) = obj.data(11).add_value(cyclecounter_list, bitand(blob(:,3),64)==64);
+                    obj.data(12) = obj.data(12).add_value(cyclecounter_list, bitand(uint8(blob(:,3)),128)==128);
             end
         end
         %% ***************Filtering *******************
@@ -908,21 +908,26 @@ classdef instrument
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
-                    subplotArray(1) = subplot(4,2,1);
+                    subplotArray(1) = subplot(4,1,1);
                     obj.data(5).plot(startTime,true,false,true);
-                    subplotArray(2) = subplot(4,2,2);
+                    subplotArray(2) = subplot(4,1,2);
                     obj.data(6).plot(startTime,true,false,true);
-                    subplotArray(3) = subplot(4,2,3);
+                    subplotArray(3) = subplot(4,1,3);
                     obj.data(7).plot(startTime,true,false,true);
-                    subplotArray(4) = subplot(4,2,4);
+                    subplotArray(4) = subplot(4,1,4);
                     obj.data(8).plot(startTime,true,true,true);
-                    subplotArray(5) = subplot(4,2,5);
+                    linkaxes(subplotArray,'x');
+                    figure()
+                    set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', fontSize);
+                    subplotArray(1) = subplot(4,1,1);
                     obj.data(9).plot(startTime,true,false,true);
-                    subplotArray(6) = subplot(4,2,6);
+                    subplotArray(2) = subplot(4,1,2);
                     obj.data(10).plot(startTime,true,false,true);
-                    subplotArray(7) = subplot(4,2,7);
+                    subplotArray(3) = subplot(4,1,3);
                     obj.data(11).plot(startTime,true,false,true);
-                    subplotArray(8) = subplot(4,2,8);
+                    subplotArray(4) = subplot(4,1,4);
                     obj.data(12).plot(startTime,true,true,true);
                     linkaxes(subplotArray,'x');
             end
