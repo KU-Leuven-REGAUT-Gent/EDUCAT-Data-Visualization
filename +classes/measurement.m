@@ -85,7 +85,7 @@ classdef measurement
                 error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory, but directly in the root of the jdbc directory.");
             end
               
-            databaseName = "educat";
+            databaseName = "educat_old";
             username = "analyst";
             disp([' EDUCAT DB username: ' char(username)]);
             if isfile("password.mat")
