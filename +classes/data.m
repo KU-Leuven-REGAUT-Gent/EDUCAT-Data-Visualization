@@ -106,7 +106,7 @@ classdef data
                 title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
             end
             if yEnLim && obj.datatype ~= 0
-                ylim([min([-0.1; obj.values],[],'all')*1.1 (1.1*max(obj.values,[],'all'))]);
+                ylim([min([-0.1; obj.values],[],'all')*1.1 (1.1*max([obj.values;0.1],[],'all'))]);
             elseif obj.datatype == 0
                 ylim([-0.1 1.1]);
             end

@@ -41,7 +41,8 @@ classdef instrument
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(6) = classes.data("baut","bouts/measurement","boolean",1);
+                    obj.data(6) = classes.data("bouts","bouts/measurement","boolean",1);                    
+                    obj.data(7) = classes.data("operating time","s","float_64",1);
                 case 162 % A2 JOYSTICK_PG_OUTPUT
                     obj.length = 6;
                     obj.data = classes.data.empty(0,obj.length);
@@ -51,7 +52,8 @@ classdef instrument
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("Mode","number","int_8",maxCycleCount);
                     obj.data(6) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(7) = classes.data("baud","bouts/measurement","boolean",1);
+                    obj.data(7) = classes.data("bouts","bouts/measurement","boolean",1);
+                    obj.data(8) = classes.data("operating time","s","float_64",1);
                 case 163 % A3 JOYSTICK_LINX_OUTPUT
                     obj.length = 5;
                     obj.data = classes.data.empty(0,obj.length);
@@ -60,7 +62,8 @@ classdef instrument
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(6) = classes.data("baud","bouts/measurement","boolean",1);
+                    obj.data(6) = classes.data("bouts","bouts/measurement","boolean",1);
+                    obj.data(7) = classes.data("operating time","s","float_64",1);
                 case 177 % B1 IMU_9AXIS_ROT_VEC
                     obj.length = 26;
                     obj.data = classes.data.empty(0,obj.length);
@@ -182,6 +185,7 @@ classdef instrument
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, rmmissing(obj.data(2).values) ~= 0 | rmmissing(obj.data(3).values) ~= 0);
                     flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
                     obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
                 case 162 % A2
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
@@ -190,7 +194,8 @@ classdef instrument
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,6));
                     obj.data(6) = obj.data(6).add_value(cyclecounter_list, rmmissing(obj.data(2).values) ~= 0 | rmmissing(obj.data(3).values) ~= 0);
                     flankDet = [obj.data(6).values ;0]- [0; obj.data(6).values];
-                    obj.data(7) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(7) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));                    
+                    obj.data(8) = obj.data(8).filteredData(1,sum(rmmissing(obj.data(6).values))*0.02);
                 case 163 % A3
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
@@ -198,7 +203,8 @@ classdef instrument
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, rmmissing(obj.data(2).values) ~= 0 | rmmissing(obj.data(3).values) ~= 0);
                     flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
-                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));                    
+                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
                 case 177 % B1
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3:4));
@@ -295,11 +301,11 @@ classdef instrument
                     
                     if  sum(filter)>0
                         if FilterUnit % percentage
-                            obj.data(7) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                         else  % value
-                            obj.data(7) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
                     else
                         obj.filtered = false;
@@ -309,16 +315,17 @@ classdef instrument
                     turn = obj.data(2).values(filter);
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
-                    obj.data(9) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(10) = classes.data("filt. baut","filtered baut/measurement","boolean",1);
+                    obj.data(10) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
+                    obj.data(11) = classes.data("filt. bouts","bouts/measurement","boolean",1);                    
+                    obj.data(12) = classes.data("filt. operating time","s","float_64",1);
                     % filtering Turn and speed
-                    obj.data(7) = obj.data(7).filteredData(cycle, turn);
-                    obj.data(8) = obj.data(8).filteredData(cycle, speed);
+                    obj.data(8) = obj.data(8).filteredData(cycle, turn);
+                    obj.data(9) = obj.data(9).filteredData(cycle, speed);
                     % Calculate operated bit and baud
-                    obj.data(9) = obj.data(9).add_value(1:size(obj.data(3).values,1), (obj.data(7).values ~= 0 & ~isnan(obj.data(7).values))| (obj.data(8).values ~= 0& ~isnan(obj.data(8).values)));
-                    flankDet = [obj.data(9).values ;0]- [0; obj.data(9).values];
-                    obj.data(10) = obj.data(10).add_value(1,sum(flankDet(flankDet>0)));
-                    
+                    obj.data(10) = obj.data(10).add_value(1:size(obj.data(3).values,1), (obj.data(8).values ~= 0 & ~isnan(obj.data(8).values))| (obj.data(9).values ~= 0& ~isnan(obj.data(9).values)));
+                    flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
+                    obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
                     
                     
                 case 162 % A2 JOYSTICK_PG_OUTPUT
@@ -332,11 +339,11 @@ classdef instrument
                     
                     if sum(filter)>0
                         if FilterUnit % percentage
-                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(10) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                         else % value
-                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(10) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
                     else
                         obj.filtered = false;
@@ -347,15 +354,17 @@ classdef instrument
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
                     
-                    obj.data(10) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("filt. baut","filtered baut/measurement","boolean",1);
+                    obj.data(11) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
+                    obj.data(12) = classes.data("filt. bouts","bouts/measurement","boolean",1);                    
+                    obj.data(13) = classes.data("filt. operating time","s","float_64",1);
                     % filtering Turn and speed
-                    obj.data(8) = obj.data(8).filteredData(cycle, turn);
-                    obj.data(9) = obj.data(9).filteredData(cycle, speed);
+                    obj.data(9) = obj.data(9).filteredData(cycle, turn);
+                    obj.data(10) = obj.data(10).filteredData(cycle, speed);
                     % Calculate operated bit and baud
-                    obj.data(10) = obj.data(10).add_value(1:size(obj.data(3).values,1), (obj.data(8).values ~= 0 & ~isnan(obj.data(8).values))| (obj.data(9).values ~= 0& ~isnan(obj.data(9).values)));
-                    flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
-                    obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(11) = obj.data(11).add_value(1:size(obj.data(3).values,1), (obj.data(9).values ~= 0 & ~isnan(obj.data(9).values))| (obj.data(10).values ~= 0& ~isnan(obj.data(10).values)));
+                    flankDet = [obj.data(11).values ;0]- [0; obj.data(11).values];
+                    obj.data(12) = obj.data(12).add_value(1,sum(flankDet(flankDet>0)));                    
+                    obj.data(13) = obj.data(13).filteredData(1,sum(obj.data(11).values)*0.02);
                     
                 case 163 % A3 JOYSTICK_LINX_OUTPUT
                     R = 128;
@@ -369,11 +378,11 @@ classdef instrument
                     if sum(filter)>0
                         % declaration of filtered data
                         if FilterUnit % percentage
-                            obj.data(7) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                         else % value
-                            obj.data(7) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(8) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
                     else
                         obj.filtered = false;
@@ -384,15 +393,17 @@ classdef instrument
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
                     
-                    obj.data(9) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(10) = classes.data("filt. baut","filtered baut/measurement","boolean",1);
+                    obj.data(10) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
+                    obj.data(11) = classes.data("filt. bouts","bouts/measurement","boolean",1);                    
+                    obj.data(12) = classes.data("filt. operating time","s","float_64",1);
                     % filtering Turn and speed
-                    obj.data(7) = obj.data(7).filteredData(cycle, turn);
-                    obj.data(8) = obj.data(8).filteredData(cycle, speed);
+                    obj.data(8) = obj.data(8).filteredData(cycle, turn);
+                    obj.data(9) = obj.data(9).filteredData(cycle, speed);
                     % Calculate operated bit and baud
-                    obj.data(9) = obj.data(9).add_value(1:size(obj.data(3).values,1), (obj.data(7).values ~= 0 & ~isnan(obj.data(7).values))| (obj.data(8).values ~= 0& ~isnan(obj.data(8).values)));
-                    flankDet = [obj.data(9).values ;0]- [0; obj.data(9).values];
-                    obj.data(10) = obj.data(10).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(10) = obj.data(10).add_value(1:size(obj.data(3).values,1), (obj.data(8).values ~= 0 & ~isnan(obj.data(8).values))| (obj.data(9).values ~= 0& ~isnan(obj.data(9).values)));
+                    flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
+                    obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));                    
+                    obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
                 otherwise
                     warning("not yet programmed");
             end
@@ -476,11 +487,11 @@ classdef instrument
                     % ------ Filtered  ------
                     if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(7).values,obj.data(8).values,128,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(7).values,obj.data(8).values,128,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,gridSize,variableScale,true,fontSize);
                     end
                     
                     % ************** Operate plot **************
@@ -493,7 +504,8 @@ classdef instrument
                     obj.data(5).plot(startTime,true,false,true);
                     xL=xlim;
                     yL=ylim;
-                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit ,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
                     obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) =  subplot(3,1,3);
@@ -515,14 +527,15 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(9).plot(startTime,true,false,true);
+                        obj.data(10).plot(startTime,true,false,true);
                         xL=xlim;
                         yL=ylim;
-                        text(xL(2),1.2*yL(2),string(obj.data(10).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                        text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(7).plot(startTime,true,false,true);
+                        obj.data(8).plot(startTime,true,false,true);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(8).plot(startTime,true,true,true);
+                        obj.data(9).plot(startTime,true,true,true);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -572,11 +585,11 @@ classdef instrument
                     % ------ Filtered ------
                     if showHeatMap(2) &&  ~isempty(obj.filtered) && obj.filtered
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(8).values,obj.data(9).values,100,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp(obj.data(9).values,obj.data(10).values,100,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap --------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(8).values,obj.data(9).values,100,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp(obj.data(9).values,obj.data(10).values,100,gridSize,variableScale,true,fontSize);
                     end
                     
                     % ************** Operate plot **************
@@ -589,7 +602,8 @@ classdef instrument
                     obj.data(6).plot(startTime,true,false,true);
                     xL=xlim;
                     yL=ylim;
-                    text(xL(2),1.2*yL(2),string(obj.data(7).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(2),1.2*yL(2),string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(8).values) + " " + obj.data(8).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
                     obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) =  subplot(3,1,3);
@@ -611,14 +625,15 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,true);
+                        obj.data(11).plot(startTime,true,false,true);
                         xL=xlim;
                         yL=ylim;
-                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                        text(xL(2),1.2*yL(2),string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                        text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(13).values) + " " + obj.data(13).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,true);
+                        obj.data(9).plot(startTime,true,false,true);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,true);
+                        obj.data(10).plot(startTime,true,true,true);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -666,11 +681,11 @@ classdef instrument
                     % ------ Filtered ------
                     if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(7).values,obj.data(8).values,128,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(7).values,obj.data(8).values,128,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,gridSize,variableScale,true,fontSize);
                     end
                     
                     % ************** Operate plot **************
@@ -683,7 +698,8 @@ classdef instrument
                     obj.data(5).plot(startTime,true,false,true);
                     xL=xlim;
                     yL=ylim;
-                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
+                    text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
                     obj.data(2).plot(startTime,true,false,true);
                     subplotArray(3) =  subplot(3,1,3);
@@ -705,14 +721,15 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(9).plot(startTime,true,false,true);
+                        obj.data(10).plot(startTime,true,false,true);
                         xL=xlim;
                         yL=ylim;
-                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " bouts/measurement",'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
+                        text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
+                        text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(7).plot(startTime,true,false,true);
+                        obj.data(8).plot(startTime,true,false,true);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(8).plot(startTime,true,true,true);
+                        obj.data(9).plot(startTime,true,true,true);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];

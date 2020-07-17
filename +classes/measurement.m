@@ -200,7 +200,7 @@ classdef measurement
             obj.user_name = string(measurement_info.user);
             
             % Set Start and end time and the cycle counters 
-            if contains(date,'full','IgnoreCase',true) || isempty(date)              
+            if contains(date,"full",'IgnoreCase',true) || date==""  || isempty(date)              
                 obj.start_time = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
                 obj.end_time = datetime(measurement_info.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
                 
@@ -209,10 +209,10 @@ classdef measurement
                     pulled_cycleCounts = seconds(diff)/0.02;
                     obj.end_cycleCount = pulled_cycleCounts;
                 else
-                    pulled_cycleCounts = obj.max_cycleCount;
-                    obj.end_cycleCount = obj.max_cycleCount;
+                    pulled_cycleCounts = int64(obj.max_cycleCount);
+                    obj.end_cycleCount =  pulled_cycleCounts;
                 end
-                obj.start_cycleCount = 0;
+                obj.start_cycleCount = 1;
             else 
                  regexDate = '^(0[1-9]|[1-2][0-9]|3[0-1])[-/](0[1-9]|1[0-2])[-/]([0-9]{4})( ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?)?$';
                  dateCapture = regexp(date,regexDate, 'tokens');
@@ -232,48 +232,49 @@ classdef measurement
                  end
 
                  % split date and reformat the date 
-                 dateSplit = split(date,{'-','/',':','h','m','s','.',' '},2);
-                 if isempty(dateSplit{end}) % if a symbol is at the end of the string a 0x0 char will be present in the dateSplit
-                     dateSplit{end} = [];
-                     sizeSplit = size(dateSplit,2)-1;
-                 else
-                     sizeSplit = size(dateSplit,2);
-                 end
-                 dateSymbols = ["-","-"," ",":",":","."]; 
-                 dateArray = reshape([dateSplit(1:sizeSplit) ;dateSymbols(1:sizeSplit)],1,[]);
+                 dateSplit = ["00","00","0000","00","00","00","000"];
+                 splitted = split(date,{'-','/',':','h','m','s','.',' '},2);
+                 dateSplit(1:size(splitted,2)) = splitted;
+                
+                 dateSymbols = ["-","-"," ",":",":",".",""]; 
+                 dateArray = reshape([dateSplit(1:7) ;dateSymbols(1:7)],1,[]);
+                 
                  dateConverted = strjoin(dateArray(1:end-1),"");
 
                  % set start time
                  startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');    
-                 if (size(dateSplit,2)==3) && contains(dateConverted,datestr(startMeasurement,'dd-mm-yyyy'))
-                         obj.start_time = startMeasurement;
-                 else % start time will be midnight
-                         obj.start_time = datetime(dateConverted,'InputFormat','dd-MM-yyyy', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
-                 end
-
+                 endMeasurement = datetime(measurement_info.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');    
+                 dateNumConverted=datenum(dateConverted,'dd-mm-yyyy HH:MM:SS.FFF');
+                 if (dateNumConverted-datenum(startMeasurement))<0 && (dateNumConverted-datenum(endMeasurement))>0
+                    obj.start_time = startMeasurement;
+                else
+                    obj.start_time = datetime(dateConverted,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                end
                 % Set start time and start and end cyclecount
-                dateNr = posixtime(obj.start_time);     
+                dateNr = posixtime(obj.start_time); 
                 % set cycle counters
-                obj.start_cycleCount = ceil(double(int64(dateNr*1000) - measurement_info.start_time)/1000/0.02+1);
+                obj.start_cycleCount = ceil((dateNr*1000 - measurement_info.start_time)/1000/0.02);
                 if obj.start_cycleCount < 0                    
                      error("out of range");
                 end
                 
                 trials =0;
-                while dur <=0
+                while isempty(dur) || dur <=0
                     if trials==3
                         exit
                     end
                     warning off backtrace;
                     warning("choose a duration higher than zero");
                     warning on backtrace;
-                    dur = input('duration: ');
+                    dur = input('enter a duration > 0: ');
                     trials = trials+1;
                 end
-                obj.end_cycleCount = floor(double(int64(dateNr*1000) + (dur*60*60*1000) - measurement_info.start_time)/1000/0.02+1); 
-
-                pulled_cycleCounts =  obj.end_cycleCount-obj.start_cycleCount+1;
-                obj.end_time = obj.start_time + seconds(pulled_cycleCounts*0.02);
+                obj.end_cycleCount = floor((dateNr*1000 + ceil(dur*60*60*1000) - measurement_info.start_time)/1000/0.02); 
+                if obj.end_cycleCount > obj.max_cycleCount
+                    obj.end_cycleCount = int64(obj.max_cycleCount);
+                end
+                pulled_cycleCounts =  int64(obj.end_cycleCount)-obj.start_cycleCount+1;
+                obj.end_time = obj.start_time + seconds(double(pulled_cycleCounts)*0.02);
             end
             
             % Selecting setup
@@ -338,13 +339,15 @@ classdef measurement
             
         Limit = 1000000;
             if Limit > (obj.end_cycleCount-obj.start_cycleCount)
-            Limit = obj.end_cycleCount-obj.start_cycleCount+1;
+                Limit = obj.end_cycleCount-obj.start_cycleCount+1;
             end
             obj.dataset_list  = [];
-            for i=obj.start_cycleCount:Limit:obj.end_cycleCount
-                endLimit = i+Limit ;
-                if i+Limit > obj.end_cycleCount-1
-                    endLimit= obj.end_cycleCount+1;
+            i=obj.start_cycleCount;
+            while i<obj.end_cycleCount
+                
+                 endLimit = i+Limit ;
+                if i+Limit > obj.end_cycleCount
+                    endLimit= obj.end_cycleCount;
                 end
                 sqlquery = ['SELECT `STP_measurement_dataset`.`id`, ' ...
                     '       `STP_measurement_dataset`.`cyclecounter`, ' ...
@@ -354,16 +357,17 @@ classdef measurement
                     'INNER JOIN `STP_measurement_data` ' ...
                     ' ON `STP_measurement_dataset`.`id` = `STP_measurement_data`.`dataset_id` ' ...
                     'WHERE `STP_measurement_dataset`.`measurement_id` = ' int2str(obj.id) ' ' ...
-                    ' AND `STP_measurement_dataset`.`cyclecounter` < ' int2str(endLimit) ' '...
+                    ' AND `STP_measurement_dataset`.`cyclecounter` <= ' int2str(endLimit) ' '...
                     ' AND `STP_measurement_dataset`.`cyclecounter` >= ' int2str(i) ';'];
-                obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];                
+                obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];    
+                i=endLimit+1;
             end
             if obj.dataset_list.cyclecounter(1)==0
                 obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
             end
             
-            cycleSequence = 1:1:(obj.end_cycleCount - obj.start_cycleCount);
-            missingCycles = setdiff(cycleSequence,obj.dataset_list.cyclecounter');
+            cycleSequence = obj.start_cycleCount:1:obj.end_cycleCount;
+            missingCycles = setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)');
          
             if ~isempty(missingCycles)
                 warning off backtrace;
@@ -407,7 +411,7 @@ classdef measurement
                      
             for i = 1:obj.n_instruments
                 new_offset = offset + obj.instruments(i).length;
-                obj.instruments(i) = obj.instruments(i).add_data( obj.dataset_list.cyclecounter, dataset(:,offset:new_offset-1));
+                obj.instruments(i) = obj.instruments(i).add_data( int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1, dataset(:,offset:new_offset-1));
                 % RAM memory usage
                 if  obj.enableStoreMemory 
                     [user,sys] = memory;
