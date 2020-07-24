@@ -21,7 +21,7 @@ classdef instrument
     end
     methods
         %%  *************** constructor *******************
-        function obj = instrument(id, name, description, datatype,maxCycleCount)
+        function obj = instrument(id, name, description, datatype,maxCycleCount,addDistSubs)
             %constructor of the instrument
             %Declaration of the ID, name, description and the datatype of
             %the instrument.
@@ -113,32 +113,44 @@ classdef instrument
                     obj.length = 5;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Calculated","cm","uint_16",maxCycleCount);
+                    if addDistSubs
                     obj.data(2) = classes.data("US","cm","uint_16",maxCycleCount);
                     obj.data(3) = classes.data("IR","cm","uint_8",maxCycleCount);
+                    end
                 case 212 % D4 CAN_DISTANCE_NODES D4 (US+2IR)
                     obj.length = 6;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Calculated","cm","uint_16",maxCycleCount);
+                    if addDistSubs
                     obj.data(2) = classes.data("US","cm","uint_16",maxCycleCount);
                     obj.data(3) = classes.data("IR 1","cm","uint_8",maxCycleCount);
                     obj.data(4) = classes.data("IR 2","cm","uint_8",maxCycleCount);
+                    end
                 case 213 % D5 CAN_DISTANCE_NODES D5 (US+3IR)
                     obj.length = 7;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Calculated","cm","uint_16",maxCycleCount);
+                    if addDistSubs
                     obj.data(2) = classes.data("US","cm","uint_16",maxCycleCount);
                     obj.data(3) = classes.data("IR 1","cm","uint_8",maxCycleCount);
                     obj.data(4) = classes.data("IR 2","cm","uint_8",maxCycleCount);
                     obj.data(5) = classes.data("IR 3","cm","uint_8",maxCycleCount);
+                    end
                 case 214 % D6  CAN_DISTANCE_NODES D6(4IR)
                     obj.length = 6;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Calculated","cm","uint_16",maxCycleCount);
+                    if addDistSubs
                     obj.data(2) = classes.data("IR 1","cm","uint_8",maxCycleCount);
                     obj.data(3) = classes.data("IR 2","cm","uint_8",maxCycleCount);
                     obj.data(4) = classes.data("IR 3","cm","uint_8",maxCycleCount);
                     obj.data(5) = classes.data("IR 4","cm","uint_8",maxCycleCount);
+                    end
                 case 215 % D7  CAN_DISTANCE_NODES D7 (4IR) Only Calculated Value
+                    obj.length = 2;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("Calculated distance","cm","uint_16",maxCycleCount);
+                case 216 % D8  CAN_DISTANCE_NODES D8 (US+3IR) Only Calculated Value
                     obj.length = 2;
                     obj.data = classes.data.empty(0,obj.length);
                     obj.data(1) = classes.data("Calculated distance","cm","uint_16",maxCycleCount);
@@ -174,7 +186,7 @@ classdef instrument
             end
         end
         %%  *************** add data function *******************
-        function obj = add_data(obj, cyclecounter_list, blob)
+        function obj = add_data(obj, cyclecounter_list, blob, addDistSubs)
             % add data to the sensordata object of the instrument
             switch obj.datatype
                 case 161 % A1
@@ -240,26 +252,36 @@ classdef instrument
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1));
                 case 211 % D3
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
+                    if addDistSubs
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3:4));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,5));
+                    end
                 case 212 % D4
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
+                    if addDistSubs
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3:4));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,5));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,6));
+                    end
                 case 213 % D5
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
+                    if addDistSubs
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3:4));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,5));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,6));
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,7));
+                    end
                 case 214 % D6
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
+                    if addDistSubs
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,6));
+                    end
                 case 215 % D7
+                    obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
+                case 216 % D8
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                 case 225 % E1
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:8));
@@ -437,7 +459,7 @@ classdef instrument
         
         
         %%  *************** plot function *******************
-        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale)
+        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor, showDistSubs)
             % plot all the sensordata object of the instrument.
             % It plots with the following settings:
             % - Font size= 20
@@ -454,13 +476,13 @@ classdef instrument
             switch obj.datatype
                 case 161 % A1 JOYSTICK DX2
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,false);
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) =  subplot(2,3,4);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) =  subplot(2,3,5);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) =  subplot(2,3,6);
-                    obj.data(4).plot(startTime,true,false,true);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -472,7 +494,7 @@ classdef instrument
                     linkaxes(subplotArray,'x');
                     
                     % *************** Deflections Pattern ****************
-                    obj.DeflectionsPattern(2, 3, fontSize);
+                    obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
                     
                     % *************** heatmap ****************
                     % ------ RAW  ------
@@ -501,15 +523,15 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,true);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit ,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -527,15 +549,15 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,true);
+                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,true);
+                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,true);
+                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -549,15 +571,15 @@ classdef instrument
                     
                 case 162 % A2 JOYSTICK PG
                     subplotArray(1) = subplot(2,4,1:4);
-                    obj.data(1).plot(startTime,true,true,false);
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,4,5);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,4,6);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(2,4,7);
-                    obj.data(4).plot(startTime,true,false,true);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(5) = subplot(2,4,8);
-                    obj.data(5).plot(startTime,true,false,true);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title =[obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
@@ -569,7 +591,7 @@ classdef instrument
                     linkaxes(subplotArray,'x');
                     
                     % *************** Deflections Pattern ****************
-                    obj.DeflectionsPattern(2, 3, fontSize);
+                    obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
                     
                     % *************** heatmap ****************
                     % ------ RAW  ------
@@ -599,15 +621,15 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(6).plot(startTime,true,false,true);
+                    obj.data(6).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(8).values) + " " + obj.data(8).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -625,15 +647,15 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(11).plot(startTime,true,false,true);
+                        obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(13).values) + " " + obj.data(13).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(9).plot(startTime,true,false,true);
+                        obj.data(9).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(10).plot(startTime,true,true,true);
+                        obj.data(10).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -647,13 +669,13 @@ classdef instrument
                     
                 case 163 % A3 JOYSTICK LINX
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,false);
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(2,3,4);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) =subplot(2,3,5);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) =subplot(2,3,6);
-                    obj.data(4).plot(startTime,true,false,true);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
@@ -665,7 +687,7 @@ classdef instrument
                     linkaxes(subplotArray,'x');
                     
                     % *************** Deflections Pattern ****************
-                    obj.DeflectionsPattern(2, 3, fontSize);
+                    obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
                     
                     % *************** heatmap ****************
                     % ------ RAW  ------
@@ -695,15 +717,15 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,true);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - measurement ID: ' num2str(measureID) ' - '];
@@ -721,15 +743,15 @@ classdef instrument
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,true);
+                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,true);
+                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,true);
+                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - measurement ID: ' num2str(measureID) ' - '];
@@ -743,11 +765,11 @@ classdef instrument
                     
                 case 177 % B1 IMU 9AXIS
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,false);
+                    obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false);
+                    obj.data(3).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -762,19 +784,19 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,false);
+                    obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                 case 178 % B2 IMU 6AXIS
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,false);
+                    obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false);
+                    obj.data(3).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -789,17 +811,17 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) =subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,false);
+                    obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                 case 193 % C1 GPS MIN
                     subplotArray(1) = subplot(2,1,1);
-                    obj.data(1).plot(startTime,true,false,false);
+                    obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,1,2);
-                    obj.data(2).plot(startTime,true,true,false);
+                    obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
@@ -814,11 +836,11 @@ classdef instrument
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) =subplot(3,1,3);
-                    obj.data(5).plot(startTime,true,true,true);
+                    obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -832,7 +854,13 @@ classdef instrument
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
-                    plot(obj.data(1).values, obj.data(2).values,'+');
+                    if plotDownSample
+                        factor = size(obj.data(2).values,1)/downSampleFactor;
+                        plt(obj.data(1).values, obj.data(2).values,'+','downsample',factor);
+                    else
+                         plot(obj.data(1).values, obj.data(2).values,'+');
+                    end
+                    % TODO
 %                     xMin = min(abs(obj.data(1).values))*0.9;
 %                     xMax = max(abs(obj.data(1).values))*1.1;
 %                     
@@ -848,104 +876,122 @@ classdef instrument
                 case 195 % C3 GPS DATA STATUS
                     disp([obj.name " is not yet programmed"]);
                 case 209 % D1 CAN DISTANCE NODES (US)
-                    obj.data(1).plot(startTime,false,true,false);
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
                 case 210 % D2 CAN DISTANCE NODES (IR)
-                    obj.data(1).plot(startTime,false,true,false);
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
                 case 211 % D3 CAN DISTANCE NODES (US+IR)
+                    if showDistSubs == false || size(obj.data,2)==1
+                        obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    else
                     subplotArray(1) =subplot(2,2,1:2);
-                    obj.data(1).plot(startTime,true,true,false);
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(2,2,3);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,2,4);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
+                    end
                 case 212 % D4 CAN DISTANCE NODES (US+2IR)
+                     if showDistSubs == false || size(obj.data,2)==1
+                         obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                     else
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,false);
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,3,4);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,3,5);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(2,3,5);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
+                     end
                 case 213 % D5 CAN DISTANCE NODES (US+3IR)
+                    if showDistSubs == false || size(obj.data,2)==1
+                        obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    else
                     subplotArray(1) =subplot(2,4,1:4);
-                    obj.data(1).plot(startTime,true,true,false);
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,4,5);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,4,6);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(2,4,7);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(5) = subplot(2,4,8);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
+                    end
                 case 214 % D6 CAN DISTANCE NODES (4IR)
-                    subplotArray(1) = subplot(2,4,1:4);
-                    obj.data(1).plot(startTime,true,true,false);
+                    if showDistSubs == false || size(obj.data,2)==1                    
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    else
+                    subplotArray(1) = subplot(2,4,1:4);                    
+                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,4,5);
-                    obj.data(2).plot(startTime,true,false,false);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,4,6);
-                    obj.data(3).plot(startTime,true,false,false);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(2,4,7);
-                    obj.data(4).plot(startTime,true,false,false);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(5) = subplot(2,4,8);
-                    obj.data(5).plot(startTime,true,false,false);
+                    obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
+                    end
                 case 215 % D7 CAN DISTANCE NODES (4IR) Only Calculated Value
-                    obj.data(1).plot(startTime,false,true,false);
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                case 216 % D8 CAN DISTANCE NODES (US+3IR) Only Calculated Value
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
                 case 225 % E1 Real Time Clock
-                    obj.data(1).plot(startTime,false,true,false);
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
                 case 241 % F1 USB AD as Instrument
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(1).plot(startTime,true,false,true);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(2).plot(startTime,true,false,true);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(3).plot(startTime,true,false,true);
+                    obj.data(3).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     s = get(gca, 'Position');
                     set(gca, 'Position', [s(1), s(2), s(3), s(4) * 0.9])
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(4).plot(startTime,true,true,true);
+                    obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     s = get(gca, 'Position');
                     set(gca, 'Position', [s(1), s(2), s(3), s(4) * 0.9])
                     linkaxes(subplotArray,'x');
                 case 242 % F2 USB AD as Instrument + Sensor activate bits
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(1).plot(startTime,true,false,true);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(2).plot(startTime,true,false,true);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(3).plot(startTime,true,false,true);
+                    obj.data(3).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(4).plot(startTime,true,true,true);
+                    obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     figure()
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(5).plot(startTime,true,false,true);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(6).plot(startTime,true,false,true);
+                    obj.data(6).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(7).plot(startTime,true,false,true);
+                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(8).plot(startTime,true,true,true);
+                    obj.data(8).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     figure()
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(9).plot(startTime,true,false,true);
+                    obj.data(9).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(10).plot(startTime,true,false,true);
+                    obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(11).plot(startTime,true,false,true);
+                    obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(12).plot(startTime,true,true,true);
+                    obj.data(12).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
             end
             Title = [obj.name newline  '- ' ...
@@ -1006,7 +1052,7 @@ classdef instrument
             
         end
         
-        function DeflectionsPattern(obj,xDataNr,yDataNr,fontSize)
+        function DeflectionsPattern(obj,xDataNr,yDataNr,fontSize,plotDownSample,downSampleFactor)
             figure()
             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
@@ -1016,7 +1062,12 @@ classdef instrument
             catch
                 suptitle('Joystick Deflection Pattern');
             end
-            plot(obj.data(xDataNr).values, obj.data(yDataNr).values,'+');
+            if plotDownSample
+                factor = size(obj.data(xDataNr).values,1)/downSampleFactor;
+                plt(obj.data(xDataNr).values, obj.data(yDataNr).values,'+','downsample',factor);
+            else
+                plot(obj.data(xDataNr).values, obj.data(yDataNr).values,'+');
+            end
             axis equal;
             limValue = max(abs([obj.data(xDataNr).values; obj.data(yDataNr).values]))*1.1;
             if( limValue >0)

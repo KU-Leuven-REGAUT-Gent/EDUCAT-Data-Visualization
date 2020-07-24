@@ -150,7 +150,7 @@ classdef measurement
         end
         %%  *************** declaration of instruments *******************
         
-        function obj = declaration(obj,date,dur)
+        function obj = declaration(obj,date,dur,addDistSubs)
            % gets the maximum cycle count of the measurement, the
            % measurements info and the list of sensors of the set up.
            % After this the declaration of the instrument objects in an
@@ -318,7 +318,7 @@ classdef measurement
             obj.n_instruments = size(datatype_list,1);
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
             for i = 1:obj.n_instruments
-                obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i), pulled_cycleCounts);
+                obj.instruments(i) = classes.instrument(datatype_list.id(i),datatype_list.name{i},datatype_list.description{i},datatype_list.value(i), pulled_cycleCounts,addDistSubs);
                 % RAM memory usage
                 if obj.enableStoreMemory 
                     [user,sys] = memory;
@@ -397,7 +397,7 @@ classdef measurement
             
         end
         %% processing 
-        function obj = processData_DB(obj)
+        function obj = processData_DB(obj,addDistSubs)
            %The declared instruments will be filled with the sensor data.
            %
            %If the data doesn't contain 0x80 on the end an error will be
@@ -411,7 +411,7 @@ classdef measurement
                      
             for i = 1:obj.n_instruments
                 new_offset = offset + obj.instruments(i).length;
-                obj.instruments(i) = obj.instruments(i).add_data( int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1, dataset(:,offset:new_offset-1));
+                obj.instruments(i) = obj.instruments(i).add_data( int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1, dataset(:,offset:new_offset-1),addDistSubs);
                 % RAM memory usage
                 if  obj.enableStoreMemory 
                     [user,sys] = memory;
@@ -427,10 +427,11 @@ classdef measurement
         end
         %% *************** plot all instrument *******************
         
-        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale)
+        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs)
            %All the instruments will be plotted
+           addpath('libraries')
             for i = 1:obj.n_instruments
-                obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale);
+                obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs);
             end
         end
         %% ***************Filtering *******************  
