@@ -423,7 +423,8 @@ classdef measurement
                 end
                 offset = new_offset+1;
             end
-            clear dataset shiftedData
+            %obj.dataset_list = [];
+            clear dataset shiftedData 
         end
         %% *************** plot all instrument *******************
         
