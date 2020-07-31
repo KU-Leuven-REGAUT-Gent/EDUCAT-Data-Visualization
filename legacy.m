@@ -79,13 +79,15 @@ clc
 close all
 import classes.*
 m = measurement();
-m = m.connect('start_time'); % TODO add selection
+m = m.connect('start_time','DESC'); % TODO add selection
 
 m.list
 
 %% 3) Declaration, getting the data and processing of measurement
 
 id = input('ID: ');
+temp = input('add distance sensor: ','s');  
+   addDistSub = temp == "Y" || temp == "y" || temp == "yes";
 if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 2)
     disp("type a date or type full to get the full measurement")  
     date = input('Date: ','s');
@@ -97,7 +99,7 @@ if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 
     tic
     m=m.set_measurement_ID(id);
    % profile on
-    m = m.declaration(date,duration);
+    m = m.declaration(date,duration,addDistSub);
     disp("Time declaration: " + toc)
     % ******* get data ********
     tic
@@ -105,13 +107,13 @@ if( size(find(m.list.id == id),1)==1 && m.list.count(find(m.list.id == id,1)) > 
     disp("Time getting data from DB: " + toc)
     % ******* process data ******
     tic
-    m= m.processData_DB();
+    m= m.processData_DB(addDistSub);
     disp("Time processing the data: " + toc)
     disp("done")
     %profile viewer
     disp("Max cycle count: "+ m.max_cycleCount)
-    duration = datetime(m.end_time, 'convertfrom','posixtime') - datetime(m.start_time, 'convertfrom','posixtime');
-    disp(['duration: ' datestr(duration,'HH:MM:SS.FFF')])
+     duration = m.end_time - m.start_time;
+     disp(['duration: ' datestr(duration,'HH:MM:SS.FFF')])
 elseif m.list.count(find(m.list.id == id,1)) < 2
     disp("measurement contains no data")
 else
@@ -134,20 +136,31 @@ clear export
 plotting = input('plot the measurement (Y/N): ','s');
 if   contains(plotting,{'y','j'})
     close all;
-    display(['Moment of measurement: ' datestr(datetime(m.start_time, 'convertfrom','posixtime'),'yyyy-mm-dd HH:MM:SS.FFF')]);
-    tic  
-    if  exist('m','var')
-        if  m.list.count(find(m.list.id == id,1)) > 2
-            m.plot_all();
-        elseif m.list.count < 2
-            disp("measurement contains no data")
-        else
-            disp("ID does not exist in database")
-        end
+    standardHeatmap = 4;
+    gridSize=10;
+    variableScale = true;
+    showHeatMap(1) = false; showHeatMap(2) = false;
+
+    %Plot options
+    plotDownSample  = false;
+    downSampleFactor=2;
+    showDistSub = true;
+
+    
+   if  exist('m','var') && ~isempty(m.instruments)
+    
+    if  size(m.instruments(1,1).data(1).values,1) > 0
+        display(['Moment of measurement: ' datestr(datetime(m.start_time),'yyyy-mm-dd HH:MM:SS.FFF')]);
+        tic
+        m.plot_all(showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSub);
+        disp("Time plotting the data: " + toc)
+        clear gridSize standardHeatmap variableScale showHeatMap 
     else
-        disp("get first the data")
+        disp("measurement contains no data")
     end
-    disp("Time plotting: " + toc)
+else
+    disp("There is no measurement. Execute first 1.A or 1.B.")
+end
 end
 clear plotting
 

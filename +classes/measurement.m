@@ -1,4 +1,4 @@
-classdef measurement
+classdef measurement < dynamicprops
     
     % measurement summary
     % This class creates an object for a measurement.
@@ -325,6 +325,25 @@ classdef measurement
                     obj.memoryDeclaration(i)= user.MemUsedMATLAB;
                 end
             end
+            % ------- software instruments  -------
+            % OAS
+%             sqlquery = ['SELECT `STP_instruments`.`id`, ' ...                
+%             '       `STP_instruments`.`name`, '...            
+%             '       `STP_instruments`.`description` '...
+%                 'FROM `STP_instruments` ' ...
+%                 'INNER JOIN `STP_setups_instruments` ' ...
+%                 'ON `STP_setups_instruments`.`instrument_id` = `STP_instruments`.`id` ' ...
+%                 'INNER JOIN `STP_setups` ' ...
+%                 'ON `STP_setups`.`id` = `STP_setups_instruments`.`setup_id` ' ...
+%                 'INNER JOIN `STP_instrument_type_parameter_values` ' ...
+%                 'ON `STP_instrument_type_parameter_values`.`instrument_type_id` = `STP_instruments`.`instrument_type_id` ' ...
+%                 'WHERE `STP_setups`.`id` = ' int2str(obj.setup_id) ' AND `STP_instrument_type_parameter_values`.`parameter_id` = 256 AND `STP_instrument_type_parameter_values`.`value` = 3;'];
+%             OAS = select(obj.conn,sqlquery);
+% %             if OAS_id.id==672
+% %               
+% %             
+% %             end
+%             obj.instruments(i+1) = classes.instrument(OAS.id,OAS.name,OAS.description,-1 , 1,false);
         end       
         
         %% *********************** Get data ***************************
@@ -375,26 +394,7 @@ classdef measurement
                 warning on backtrace;
             end 
             
-%              sqlquery = ['SELECT `STP_instruments`.`id` ' ...
-%                 'FROM `STP_instruments` ' ...
-%                 'INNER JOIN `STP_setups_instruments` ' ...
-%                 'ON `STP_setups_instruments`.`instrument_id` = `STP_instruments`.`id` ' ...
-%                 'INNER JOIN `STP_setups` ' ...
-%                 'ON `STP_setups`.`id` = `STP_setups_instruments`.`setup_id` ' ...
-%                 'INNER JOIN `STP_instrument_type_parameter_values` ' ...
-%                 'ON `STP_instrument_type_parameter_values`.`instrument_type_id` = `STP_instruments`.`instrument_type_id` ' ...
-%                 'WHERE `STP_setups`.`id` = ' int2str(obj.setup_id) ' AND `STP_instrument_type_parameter_values`.`parameter_id` = 256 AND `STP_instrument_type_parameter_values`.`value` = 3;'];
-%             instr_id = select(obj.conn,sqlquery);
-            %% TODO karakteristieke slopcv
-%             if instr_id>0 
-%               sqlquery = ['SELECT * FROM `STP_instrument_parameter_values` '...
-%                             'WHERE (`instrument_id` =' int2str(instr_id.id) ') '...
-%                             'AND(`parameter_id` in (403,404,405));']
-%                         sqlquery = ['SELECT * FROM `STP_instrument_parameter_values` '...
-%                             'WHERE (`instrument_id` =' int2str(instr_id.id) ');'];
-%               select(obj.conn,sqlquery)
-%               end
-            
+      
         end
         %% processing 
         function obj = processData_DB(obj,addDistSubs)
@@ -423,6 +423,27 @@ classdef measurement
                 end
                 offset = new_offset+1;
             end
+            %% TODO OAS characteristic slopcv
+            
+%             if OAS_id.id >0 
+%               sqlquery = ['SELECT * FROM `STP_instrument_parameter_values` '...
+%                             'WHERE ((`instrument_id` =' int2str(OAS_id.id) ') '...
+%                             'AND(`parameter_id` in (1027,1028,1029)));'];
+%               OAS_setting = select(obj.conn,sqlquery);
+%               
+%             joystick_id = findobj(obj.instruments,'datatype',161,'-or','datatype',162,'-or','datatype',163).id;
+%             sqlquery = ['SELECT * FROM `STP_instrument_parameter_values` '...
+%                             'WHERE ((`instrument_id` =' int2str(joystick_id) ') '...
+%                             'AND(`parameter_id` in (1026)));'];
+%             OAS_setting= [OAS_setting; select(obj.conn,sqlquery)];
+%             obj.addprop(OAS)
+%             obj.isntrument.add_OAS_setting(OAS_setting);
+%               
+%               
+%             end
+            
+            
+            
             obj.dataset_list = [];
             clear dataset shiftedData 
         end

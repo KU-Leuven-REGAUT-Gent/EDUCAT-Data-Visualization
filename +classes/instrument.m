@@ -1,5 +1,5 @@
 
-classdef instrument
+classdef instrument < dynamicprops
     % instrument summary
     % This object contains all the sensor data
     %
@@ -181,10 +181,18 @@ classdef instrument
                     obj.data(10) = classes.data("Sensor activate bit - Instrument 6","","boolean",maxCycleCount);
                     obj.data(11) = classes.data("Sensor activate bit - Instrument 7","","boolean",maxCycleCount);
                     obj.data(12) = classes.data("Sensor activate bit - Instrument 8","","boolean",maxCycleCount);
+                
+                case -1 % OAS
+                    obj.addprop('settings');
+                    obj.settings = classes.setting.empty(0,3);            
+                    obj.settings(1) = classes.setting("max speed Joystick",1026,"uint_8",1);
+                    obj.settings(2) = classes.setting("OAS Slope Start",1027,"uint_8",1);
+                    obj.settings(3) = classes.setting("OAS Slope Percentage",1028,"uint_8",1);
                 otherwise
                     error("Datatype unsupported");
             end
         end
+        
         %%  *************** add data function *******************
         function obj = add_data(obj, cyclecounter_list, blob, addDistSubs)
             % add data to the sensordata object of the instrument
@@ -305,8 +313,25 @@ classdef instrument
                     obj.data(12) = obj.data(12).add_value(cyclecounter_list, bitand(uint8(blob(:,3)),128)==128);
             end
         end
-        %% ***************Filtering *******************
         
+        %%  *************** add OAS characteristic function *******************
+        function obj = add_OAS_setting(obj,OAS_settings)
+            
+            ismember(OAS_settings, obj.settings(2).id)
+            
+            obj.settings = classes.setting.empty(0,4);            
+            obj.settings(1) = classes.setting("max speed Joystick",1026,"uint_8",1);
+            obj.settings(2) = classes.setting("OAS Slope Start",1027,"uint_8",1);
+            obj.settings(3) = classes.setting("OAS Slope Percentage",1028,"uint_8",1);
+            obj.settings(4) = classes.setting("OAS Slope End",1029,"uint_8",1);
+            
+            obj.settings(1) = obj.settings(1).add_setting(1, parameter_value);
+            obj.settings(2) = obj.settings(2).add_setting(1, parameter_value);
+            obj.settings(3) = obj.settings(3).add_setting(1, parameter_value);
+            obj.settings(4) = obj.settings(4).add_setting(1, parameter_value);
+        end
+        
+        %% ***************Filtering *******************
         function obj = filter(obj,deadZone,FilterUnit)
             
             
@@ -431,6 +456,7 @@ classdef instrument
             end
             obj.filtered = true;
         end
+        
         %%  *************** export function *******************
         function out = export(obj)
             % Under construction
