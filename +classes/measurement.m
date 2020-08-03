@@ -30,7 +30,7 @@ classdef measurement < dynamicprops
     
     properties
         id, ...
-        description, ...
+        name, ...
         setup_id, ...
         setup_name, ...
         start_time, ...
@@ -74,10 +74,10 @@ classdef measurement < dynamicprops
             % No database object necessary
             % Install https://dev.mysql.com/downloads/file/?id=490495
             if isfile("jdbc/mysql-connector-java-8.0.18.jar")
-                javaaddpath("jdbc/mysql-connector-java-8.0.18.jar");
+                javaclasspath("jdbc/mysql-connector-java-8.0.18.jar");
             elseif isfile("mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar")
                 % legacy jdbc location
-                javaaddpath("mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
+                javaclasspath("mysql-connector-java-8.0.18/mysql-connector-java-8.0.18.jar");
             else
                 if ~exist('jdbc', 'dir')
                     mkdir('jdbc')                    
@@ -113,10 +113,10 @@ classdef measurement < dynamicprops
             
                     
            sqlquery = ['SELECT `measurements`.`id`, ' ...
-                    '       `measurements`.`name_en` AS `name`, ' ...
-                    '       `measurements`.`description_en` AS `description`, ' ...
-                    '       `measurements`.`start_time`, ' ...
-                    '       `measurements`.`end_time`, ' ...
+                    '       TRIM(`measurements`.`name_en`) AS `name`, ' ...
+                    '       TRIM(`measurements`.`description_en`) AS `description`, ' ...
+                    '       `measurements`.`started_at`, ' ...
+                    '       `measurements`.`stopped_at`, ' ...
                     '       TRIM(`setups`.`name_en`) AS `setup`, ' ...
                     '       TRIM(`users`.`username`) AS `user`, ' ...
                     '       `measurements`.`count`, ' ...
@@ -129,17 +129,22 @@ classdef measurement < dynamicprops
                     '       ORDER BY `' sort '`' direction ';'];
             
             obj.list = select( obj.conn,sqlquery);
+            obj.list.name = string(obj.list.name);
+            obj.list.description(contains(obj.list.description,''))= {'empty'};
             obj.list.description = string(obj.list.description);
+            obj.list.name = string(obj.list.name);
             obj.list.setup = string(obj.list.setup);
             obj.list.user = string(obj.list.user);
             wrongID = obj.list.id ==  -2147483648;
-            obj.list.start_time(wrongID) = 0;
-            obj.list.end_time(wrongID) = 0;
+            obj.list.started_at(wrongID) ={'0'};
+            obj.list.stopped_at(wrongID) ={'0'};
             % start time
-            obj.list.start_time = datetime(obj.list.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss');
-           
+            obj.list.started_at = string(obj.list.started_at);
+            %obj.list.started_at = datetime(obj.list.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
+  
             % end time 
-            obj.list.end_time = datetime(obj.list.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss');
+            obj.list.stopped_at = string(obj.list.stopped_at);
+            %obj.list.stopped_at = datetime(obj.list.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
         end
         
  
@@ -166,9 +171,9 @@ classdef measurement < dynamicprops
            %        If no time is chosen the measurement object will have a
            %        start time of 00:00:00.000 of the given date.
      
-           sqlquery = ['SELECT MAX(`measurement_dataset`.`cyclecounter`) AS `max` ' ...
-                'FROM `measurement_dataset` ' ...
-                'WHERE `measurement_dataset`.`measurement_id` = ' int2str(obj.id) ';'];
+           sqlquery = ['SELECT MAX(`measurement_datasets`.`cyclecounter`) AS `max` ' ...
+                'FROM `measurement_datasets` ' ...
+                'WHERE `measurement_datasets`.`measurement_id` = ' int2str(obj.id) ';'];
             maxCycleCount = select(obj.conn,sqlquery);
             obj.max_cycleCount = maxCycleCount.max;            
                                  
@@ -177,11 +182,11 @@ classdef measurement < dynamicprops
                 '       `measurements`.`user_id`, ' ...
                 '       `measurements`.`started_at`, ' ...
                 '       `measurements`.`stopped_at`, ' ...
-                '       `measurements`.`name_en` AS `name`, ' ...
-                '       `measurements`.`description_en` AS `description`, ' ...
-                '       TRIM(``setups`.`name_en`), AS `user`, ' ...
-                '       TRIM(``users`.`username`), AS `setup` ' ...
-                'FROM `measurements` ' ...                '       
+                '        TRIM(`measurements`.`name_en`) AS `name`, ' ...
+                '       TRIM(`measurements`.`description_en`) AS `description`, ' ...
+                '       TRIM(`setups`.`name_en`) AS `user`, ' ...
+                '       TRIM(`users`.`username`) AS `setup` ' ...
+                'FROM `measurements` ' ...                       
                 '       LEFT JOIN `users` ' ...
                 '       ON `measurements`.`user_id` = `users`.`id` ' ...
                 '       LEFT JOIN `setups` ' ...
@@ -190,16 +195,16 @@ classdef measurement < dynamicprops
             
             measurement_info = select(obj.conn, sqlquery);
             obj.id = measurement_info.id;             
-            obj.description = string(measurement_info.description);  
+            obj.name = string(measurement_info.description);  
             obj.setup_id = measurement_info.setup_id;
             obj.setup_name = string(measurement_info.setup);
-            obj.user_id = measurement_info.setup_user_id;
+            obj.user_id = measurement_info.user_id;
             obj.user_name = string(measurement_info.user);
             
             % Set Start and end time and the cycle counters 
             if contains(date,"full",'IgnoreCase',true) || date==""  || isempty(date)              
-                obj.start_time = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
-                obj.end_time = datetime(measurement_info.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');
+                obj.start_time = datetime(measurement_info.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
+                obj.end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
                 
                 if  obj.max_cycleCount == -2147483648
                     diff = obj.end_time - obj.start_time;
@@ -239,8 +244,8 @@ classdef measurement < dynamicprops
                  dateConverted = strjoin(dateArray(1:end-1),"");
 
                  % set start time
-                 startMeasurement = datetime(measurement_info.start_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');    
-                 endMeasurement = datetime(measurement_info.end_time,'ConvertFrom','epochtime','TicksPerSecond',1e3,'Format','dd-MM-yyyy HH:mm:ss.SSS');    
+                 startMeasurement = datetime(measurement_info.start_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');    
+                 endMeasurement = datetime(measurement_info.end_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');    
                  dateNumConverted=datenum(dateConverted,'dd-mm-yyyy HH:MM:SS.FFF');
                  if (dateNumConverted-datenum(startMeasurement))<0 && (dateNumConverted-datenum(endMeasurement))>0
                     obj.start_time = startMeasurement;
@@ -276,8 +281,8 @@ classdef measurement < dynamicprops
             
             % Selecting setup
             sqlquery = ['SELECT `t1`.`id`, '...	  
-            '       `t1`.`name_en` AS `name`, '...
-            '       `t1`.`description_en` AS `description`, '...
+            '       TRIM(`t1`.`name_en`) AS `name`, '...
+            '       TRIM(`t1`.`description_en`) AS `description`, '...
             '       IF(`t2`.`value` IS NULL, `t1`.`value`,  `t2`.`value`) AS value  '...
             'FROM ( '...
             'SELECT `instrument_type_parameter`.`value`, '...
@@ -296,7 +301,7 @@ classdef measurement < dynamicprops
             'LEFT JOIN ( '...
             'SELECT `instrument_parameter`.`value`, '...
             '       `instruments`.`id` '...
-            'FROM `instrument_parameter_values` '...
+            'FROM `instrument_parameter` '...
             'INNER JOIN `instruments` '...
             ' ON `instruments`.`id` = `instrument_parameter`.`instrument_id` '...
             'INNER JOIN `setups` '...
@@ -339,83 +344,97 @@ classdef measurement < dynamicprops
         
         %% *********************** Get data ***************************
         
-        function obj = get_dataset_DB(obj)
+        function obj = get_dataset_DB(obj,excludeInstruments,addDistSubs)
             %Get the dataset from the 'STP_measurement_dataset table'.
             %This contains all the data inside the chosen range
             %MATLAB will get the data in parts of maximum 5000.
             %
             %A warning will be created when there are missing cycle
             %counters
-            
-        Limit = 1000000;
-            if Limit > (obj.end_cycleCount-obj.start_cycleCount)
-                Limit = obj.end_cycleCount-obj.start_cycleCount+1;
-            end
-            obj.dataset_list  = [];
-            i=obj.start_cycleCount;
-            while i<obj.end_cycleCount
-                
-                 endLimit = i+Limit ;
-                if i+Limit > obj.end_cycleCount
-                    endLimit= obj.end_cycleCount;
+            totalExtrationTime = 0;
+            totalProcessingTime =0;
+        for i = 1:obj.n_instruments 
+            if excludeInstruments(i)==0
+                obj.instruments(i).addprop('extracted');
+                obj.instruments(i).extracted = true;
+                Limit = 1000000;
+                if Limit > (obj.end_cycleCount-obj.start_cycleCount)
+                    Limit = obj.end_cycleCount-obj.start_cycleCount+1;
                 end
-                sqlquery = ['SELECT `measurement_datasets`.`id`, ' ...
-                    '       `measurement_datasets`.`cyclecounter`, ' ...
-                    '       `measurement_datasets`.`status`, ' ...
-                    '       `measurement_datablobs`.`instrument_id`, ' ...
-                    '       `measurement_datablobs`.`data`, ' ...
-                    '       `measurement_datablobs`.`status` ' ...
-                    'FROM `measurement_dataset` '  ...
-                    'INNER JOIN `measurement_datablobs` ' ...
-                    ' ON `measurement_dataset`.`id` = `measurement_datablobs`.`measurement_dataset_id` ' ...
-                    'WHERE `measurement_datasets`.`measurement_id` = ' int2str(obj.id) ' ' ...
-                    ' AND `measurement_datasets`.`cyclecounter` <= ' int2str(endLimit) ' '...
-                    ' AND `measurement_datasets`.`cyclecounter` >= ' int2str(i) ';'];
-                obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];    
-                i=endLimit+1;
+                obj.dataset_list  = [];
+                j=obj.start_cycleCount;
+                tic
+                disp(newline + "  -------" + obj.instruments(i).name + "-----" );
+                while j<obj.end_cycleCount
+
+                     endLimit = i+Limit ;
+                    if j+Limit > obj.end_cycleCount
+                        endLimit= obj.end_cycleCount;
+                    end
+                    sqlquery = ['SELECT `measurement_datasets`.`cyclecounter`, ' ...
+                        '       `measurement_datasets`.`status`, ' ...
+                        '       `measurement_datablobs`.`data`, ' ...
+                        '       `measurement_datablobs`.`status` ' ...
+                        'FROM `measurement_datasets` '  ...
+                        'INNER JOIN `measurement_datablobs` ' ...
+                        ' ON `measurement_datasets`.`id` = `measurement_datablobs`.`measurement_dataset_id` ' ...
+                        'WHERE `measurement_datasets`.`measurement_id` = ' int2str(obj.id) ' ' ...
+                        ' AND `measurement_datasets`.`cyclecounter` <= ' int2str(endLimit) ' '...
+                        ' AND `measurement_datasets`.`cyclecounter` >= ' int2str(j) ' '...
+                        ' AND `measurement_datablobs`.`instrument_id` = ' int2str(obj.instruments(i).id ) ';'];
+                    obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];    
+                    j=endLimit+1;
+                end
+                if obj.dataset_list.cyclecounter(1)==0
+                    obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
+                end
+
+    %             cycleSequence = obj.start_cycleCount:1:obj.end_cycleCount;
+    %             missingCycles = setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)');
+    %          
+    %             if ~isempty(missingCycles)
+    %                 warning off backtrace;
+    %                 warning(" %i cyclecounters are missing:(first 25 are shown)\n%s %s", size(missingCycles,2),join(string(missingCycles(1:min([25 size(missingCycles,2)]))),", "));
+    %                 warning on backtrace;
+    %             end
+                extrationTime = toc;
+                disp("  - Extraction time: " + extrationTime + " s");
+                totalExtrationTime = totalExtrationTime + extrationTime; 
+                [obj,processingTime] = processData_DB(obj,i,addDistSubs);
+                totalProcessingTime = totalProcessingTime + processingTime;
             end
-            if obj.dataset_list.cyclecounter(1)==0
-                obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
-            end
-            
-            cycleSequence = obj.start_cycleCount:1:obj.end_cycleCount;
-            missingCycles = setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)');
-         
-            if ~isempty(missingCycles)
-                warning off backtrace;
-                warning(" %i cyclecounters are missing:(first 25 are shown)\n%s %s", size(missingCycles,2),join(string(missingCycles(1:min([25 size(missingCycles,2)]))),", "));
-                warning on backtrace;
-            end
-            
-      
+        end  
+         disp(newline + "  ------ Total time -----");
+         disp("    Extraction time: " + totalExtrationTime + " s");
+         disp("    processing time: " + totalProcessingTime + " s");
         end
         %% processing 
-        function obj = processData_DB(obj,addDistSubs)
+        function [obj,processingTime] = processData_DB(obj,i,addDistSubs)
            %The declared instruments will be filled with the sensor data.
            %
            %If the data doesn't contain 0x80 on the end an error will be
            %prompted and the code stops.
            
-            offset = 1;
-             
+          
             % converting Cell to array and shifting the array in case of
             % missing cycle counters
+            tic 
              dataset = cell2mat(obj.dataset_list.data')';
                      
-            for i = 1:obj.n_instruments
-                new_offset = offset + obj.instruments(i).length;
-                obj.instruments(i) = obj.instruments(i).add_data( int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1, dataset(:,offset:new_offset-1),addDistSubs);
+            
+                obj.instruments(i) = obj.instruments(i).add_data( int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1, dataset,addDistSubs);
                 % RAM memory usage
                 if  obj.enableStoreMemory 
                     [user,sys] = memory;
                     obj.memoryInstrument(i) =  user.MemUsedMATLAB;
                 end 
                  
-                if ( dataset(:,new_offset)~= -128 - isnan(dataset(:,new_offset)))>0
+                if ( obj.dataset_list.status_1 ~= 128 - isnan(obj.dataset_list.status_1))>0
                     error("No 0x80 at the end");
                 end
-                offset = new_offset+1;
-            end
+             processingTime = toc; 
+           disp("  - processing time: " + processingTime + " s");
+           
             %% TODO OAS characteristic slope
             
 %             if OAS_id.id >0 
@@ -442,11 +461,13 @@ classdef measurement < dynamicprops
         end
         %% *************** plot all instrument *******************
         
-        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs)
+        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,ExcludedInstruments,plotDownSample,downSampleFactor,showDistSubs)
            %All the instruments will be plotted
            addpath('libraries')
             for i = 1:obj.n_instruments
+                if isprop(obj.instruments(i),'extracted') && obj.instruments(i).extracted ==1 && ExcludedInstruments(i)
                 obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs);
+                end
             end
         end
         %% ***************Filtering *******************  
@@ -494,7 +515,7 @@ classdef measurement < dynamicprops
             cycleCount = (1:1:size(obj.instruments(1).data(1).values,1))';
             assignin('base',strcat('ID',num2str(obj.id),'_cycleCount'), cycleCount);
             info.measurementID= obj.id;
-            info.measurementDescription = string(obj.description);
+            info.measurementName = string(obj.name);
             info.setupID= obj.setup_id;
             info.setupName= string(obj.setup_name);
             info.userID= obj.user_id;
