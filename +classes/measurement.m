@@ -365,7 +365,7 @@ classdef measurement < dynamicprops
                 j=obj.start_cycleCount;
                 tic
                 disp(newline + "  -------" + obj.instruments(i).name + "-----" );
-                while j<obj.end_cycleCount
+                while j<obj.end_cycleCount 
 
                      endLimit = i+Limit ;
                     if j+Limit > obj.end_cycleCount
@@ -385,7 +385,12 @@ classdef measurement < dynamicprops
                     obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];    
                     j=endLimit+1;
                 end
-                if obj.dataset_list.cyclecounter(1)==0
+                if isempty(obj.dataset_list)
+                    warning off backtrace;                    
+                    warning("Measurement contains no data");
+                    warning on backtrace;
+                    return;
+                elseif obj.dataset_list.cyclecounter(1)==0
                     obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
                 end
 
