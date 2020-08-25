@@ -367,7 +367,7 @@ classdef measurement < dynamicprops
                 disp(newline + "  -------" + obj.instruments(i).name + "-----" );
                 while j<obj.end_cycleCount 
 
-                     endLimit = i+Limit ;
+                     endLimit = j+Limit ;
                     if j+Limit > obj.end_cycleCount
                         endLimit= obj.end_cycleCount;
                     end
