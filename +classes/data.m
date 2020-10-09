@@ -117,7 +117,8 @@ classdef data
             end
             xlim(([min(time) (max(time))]));
             if enableXlabel
-                xlabel('Time (UTC)','fontsize',20);
+                tzOffset = tzoffset(startTime);
+                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
             end
             if strlength(char(obj.name))> 30
                 yText = split(extractAfter(char(obj.name),strlength(char(obj.name))/2),['-',' ']);

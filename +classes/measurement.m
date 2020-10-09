@@ -204,8 +204,8 @@ classdef measurement < dynamicprops
             
             % Set Start and end time and the cycle counters 
             if contains(date,"full",'IgnoreCase',true) || date==""  || isempty(date)              
-                obj.start_time = datetime(measurement_info.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
-                obj.end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
+                obj.start_time = datetime(measurement_info.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
+                obj.end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
                 
                 if  obj.max_cycleCount == -2147483648
                     diff = obj.end_time - obj.start_time;
@@ -245,8 +245,8 @@ classdef measurement < dynamicprops
                  dateConverted = strjoin(dateArray(1:end-1),"");
 
                  % set start time
-                 startMeasurement = datetime(measurement_info.start_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');    
-                 endMeasurement = datetime(measurement_info.end_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');    
+                 startMeasurement = datetime(measurement_info.start_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');    
+                 endMeasurement = datetime(measurement_info.end_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');    
                  dateNumConverted=datenum(dateConverted,'dd-mm-yyyy HH:MM:SS.FFF');
                  if (dateNumConverted-datenum(startMeasurement))<0 && (dateNumConverted-datenum(endMeasurement))>0
                     obj.start_time = startMeasurement;
