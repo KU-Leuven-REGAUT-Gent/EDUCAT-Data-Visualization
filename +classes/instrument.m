@@ -202,8 +202,8 @@ classdef instrument < dynamicprops
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, rmmissing(obj.data(2).values) ~= 0 | rmmissing(obj.data(3).values) ~= 0);
-                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
+                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,3) ~= 0 | blob(:,4) ~= 0);
+                   flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
                     obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
                 case 162 % A2
@@ -212,7 +212,7 @@ classdef instrument < dynamicprops
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,6));
-                    obj.data(6) = obj.data(6).add_value(cyclecounter_list, rmmissing(obj.data(2).values) ~= 0 | rmmissing(obj.data(3).values) ~= 0);
+                    obj.data(6) = obj.data(6).add_value(cyclecounter_list, blob(:,3) ~= 0 | blob(:,4) ~= 0);
                     flankDet = [obj.data(6).values ;0]- [0; obj.data(6).values];
                     obj.data(7) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));                    
                     obj.data(8) = obj.data(8).filteredData(1,sum(rmmissing(obj.data(6).values))*0.02);
@@ -221,7 +221,7 @@ classdef instrument < dynamicprops
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, rmmissing(obj.data(2).values) ~= 0 | rmmissing(obj.data(3).values) ~= 0);
+                    obj.data(5) =  obj.data(6).add_value(cyclecounter_list, blob(:,4) ~= 0 | blob(:,5) ~= 0);
                     flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
                     obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));                    
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
