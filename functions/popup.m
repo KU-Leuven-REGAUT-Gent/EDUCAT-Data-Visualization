@@ -13,6 +13,9 @@ fig = uifigure;
       n_instruments = m.n_instruments;
       lblText = 'Indicate which instruments that should not be retrieved:';
   end
+  if isprop(m,'OAS')
+    n_instruments = n_instruments +1;
+end
   GuiHeight = 30+50+n_instruments*30+10;
 
 % Find Screen Resolution
@@ -36,20 +39,29 @@ for ii = instrumentList
   cb(ii).Text = m.instruments(ii).name; 
  
 end
+if isprop(m,'OAS')
+    cb(ii+1) = uicheckbox('Parent',fig,'Position',[20 height - (ii+1)*30 200 30]);
+      
+  cb(ii+1).Text = 'OAS'; 
+end
+    
 uibutton('Parent',fig,'Position',[10 15 50 30],'Text','confirm',...
-            'ButtonPushedFcn', @(btn,event) plotButtonPushed(cb,instrumentList));
+            'ButtonPushedFcn', @(btn,event) plotButtonPushed(cb,instrumentList,m));
         uiwait (fig);
 end
 
 
 
 % Create the function for the ButtonPushedFcn callback
-function plotButtonPushed(cb,instrumentList)
-    ExcludedInstruments= zeros(1,size(instrumentList,2));
+function plotButtonPushed(cb,instrumentList,m)
+    includedInstruments= zeros(1,size(instrumentList,2));
     for i=instrumentList
-        ExcludedInstruments(i) = cb(i).Value;
+        includedInstruments(i) = cb(i).Value;
     end
-     assignin('base','ExcludedInstruments',ExcludedInstruments);
+    if isprop(m,'OAS')
+     includedInstruments(i+1) = cb(i+1).Value;
+    end
+     assignin('base','includedInstruments',includedInstruments);
      closereq;
 end
 

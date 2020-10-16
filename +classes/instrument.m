@@ -314,22 +314,7 @@ classdef instrument < dynamicprops
             end
         end
         
-        %%  *************** add OAS characteristic function *******************
-        function obj = add_OAS_setting(obj,OAS_settings)
-            
-            ismember(OAS_settings, obj.settings(2).id)
-            
-            obj.settings = classes.setting.empty(0,4);            
-            obj.settings(1) = classes.setting("max speed Joystick",1026,"uint_8",1);
-            obj.settings(2) = classes.setting("OAS Slope Start",1027,"uint_8",1);
-            obj.settings(3) = classes.setting("OAS Slope Percentage",1028,"uint_8",1);
-            obj.settings(4) = classes.setting("OAS Slope End",1029,"uint_8",1);
-            
-            obj.settings(1) = obj.settings(1).add_setting(1, parameter_value);
-            obj.settings(2) = obj.settings(2).add_setting(1, parameter_value);
-            obj.settings(3) = obj.settings(3).add_setting(1, parameter_value);
-            obj.settings(4) = obj.settings(4).add_setting(1, parameter_value);
-        end
+
         
         %% ***************Filtering *******************
         function obj = filter(obj,deadZone,FilterUnit)
@@ -790,6 +775,7 @@ classdef instrument < dynamicprops
                     end
                     
                 case 177 % B1 IMU 9AXIS
+                    % accelleration 
                     subplotArray(1) = subplot(3,1,1);
                     obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(3,1,2);
@@ -805,6 +791,7 @@ classdef instrument < dynamicprops
                     catch
                         suptitle(Title);
                     end
+                    %  Gyroscope
                     figure();
                     set(gca,'fontsize',20) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
@@ -816,6 +803,51 @@ classdef instrument < dynamicprops
                     subplotArray(3) = subplot(3,1,3);
                     obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
+                    Title = [obj.name newline  '- ' ...
+                        datestr(datetime(startTime), ...
+                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                    try
+                        sgtitle(Title,'fontsize',fontSize+2);
+                    catch
+                        suptitle(Title);
+                    end
+                    % Magnetometer
+                     figure();
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', fontSize);
+                    subplotArray(1) = subplot(3,1,1);
+                    obj.data(7).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    subplotArray(2) = subplot(3,1,2);
+                    obj.data(8).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    subplotArray(3) = subplot(3,1,3);
+                    obj.data(9).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    linkaxes(subplotArray,'x');
+                    Title = [obj.name newline  '- ' ...
+                        datestr(datetime(startTime), ...
+                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                    try
+                        sgtitle(Title,'fontsize',fontSize+2);
+                    catch
+                        suptitle(Title);
+                    end
+                    
+                    % Quaternion
+                     figure();
+                    set(gca,'fontsize',20) % set fontsize of the plot to 20
+                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                    set(0, 'DefaultAxesFontSize', fontSize);
+                    subplotArray(1) = subplot(4,1,1);
+                    obj.data(10).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    subplotArray(2) = subplot(4,1,2);
+                    obj.data(11).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    subplotArray(3) = subplot(4,1,3);
+                    obj.data(12).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    subplotArray(4) = subplot(4,1,4);
+                    obj.data(13).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    linkaxes(subplotArray,'x');                   
+                    
+                    
                 case 178 % B2 IMU 6AXIS
                     subplotArray(1) = subplot(3,1,1);
                     obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
@@ -844,6 +876,7 @@ classdef instrument < dynamicprops
                     obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                 case 193 % C1 GPS MIN
+                   
                     subplotArray(1) = subplot(2,1,1);
                     obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,1,2);
@@ -883,20 +916,36 @@ classdef instrument < dynamicprops
                     if plotDownSample
                         factor = size(obj.data(2).values,1)/downSampleFactor;
                         plt(obj.data(1).values, obj.data(2).values,'+','downsample',factor);
+                        xlabel(obj.data(1).name);
+                        ylabel(obj.data(2).name);
                     else
-                         plot(obj.data(1).values, obj.data(2).values,'+');
+                     
+                        plot(obj.data(1).values, obj.data(2).values,'+');
+                             Title = [obj.name newline  '- ' ...
+                            datestr(datetime(startTime), ...
+                            'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        try
+                            sgtitle(Title,'fontsize',fontSize+2);
+                        catch
+                            suptitle(Title);
+                        end
+                         xlabel('Longitude','fontsize',fontSize);
+                        ylabel('lattitude','fontsize',fontSize);
+                        
+                        % with satelitte view
+                        figure()
+                        set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                        set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                        set(0, 'DefaultAxesFontSize', fontSize);
+                         gx =geoscatter(obj.data(2).values, obj.data(1).values);
+                         gx.Parent.FontSize =fontSize;
+                         geobasemap satellite
+                         [latlim, lonlim] = geolimits;
+                         geolimits([latlim(1)-0.0009 latlim(2)+0.0009],[lonlim(1)-0.0009 lonlim(2)+0.0009]) ;
+%                        
                     end
-                    % TODO
-%                     xMin = min(abs(obj.data(1).values))*0.9;
-%                     xMax = max(abs(obj.data(1).values))*1.1;
-%                     
-%                     yMin = min(abs(obj.data(2).values))*0.9;
-%                     yMax = max(abs(obj.data(2).values))*1.1;
-%                     
-%                     axis ([-xMin xMax -yMin yMax]);
-                   
-                    xlabel(obj.data(1).name);
-                    ylabel(obj.data(2).name);
+
+                    
                 case 194 % C2 GPS STATUS
                     disp([obj.name " is not yet programmed"]);
                 case 195 % C3 GPS DATA STATUS
