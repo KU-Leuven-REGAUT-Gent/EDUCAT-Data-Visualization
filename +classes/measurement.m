@@ -379,84 +379,96 @@ classdef measurement < dynamicprops
             %counters
             totalExtrationTime = 0;
             totalProcessingTime =0;
-            for i = 1:obj.n_instruments
-                if excludeInstruments(i)==0
-                    obj.instruments(i).addprop('extracted');
-                    obj.instruments(i).extracted = true;
-                    Limit = 1000000;
-                    if Limit > (obj.end_cycleCount-obj.start_cycleCount)
-                        Limit = obj.end_cycleCount-obj.start_cycleCount+1;
-                    end
-                    obj.dataset_list  = [];
-                    j=obj.start_cycleCount;
-                    tic
-                    disp(newline + "  -------" + obj.instruments(i).name + "-----" );
-                    while j<obj.end_cycleCount
-                        
-                        endLimit = j+Limit ;
-                        if j+Limit > obj.end_cycleCount
-                            endLimit= obj.end_cycleCount;
+            missingCycles = cell(obj.n_instruments,1);
+                 for i = 1:obj.n_instruments
+                    if excludeInstruments(i)==0
+                        obj.instruments(i).addprop('extracted');
+                        obj.instruments(i).extracted = true;
+                        Limit = 1000000;
+                        if Limit > (obj.end_cycleCount-obj.start_cycleCount)
+                            Limit = obj.end_cycleCount-obj.start_cycleCount+1;
                         end
-                        
-                        
-                        sqlquery = ['SELECT  `t1`.`cyclecounter`,  ' ...
-                            '       `t1`.`status`, ' ...
-                            '       `t2`.`data`, ' ...
-                            '       `t2`.`status` ' ...
-                            'FROM '  ...
-                            '         (SELECT `measurement_datasets`.`id`, '...
-                            '                    `measurement_datasets`.`cyclecounter`, ' ...
-                            '                    `measurement_datasets`.`status` '...
-                            '            FROM `measurement_datasets` '...
-                            '            WHERE `measurement_datasets`.`cyclecounter` >= ' int2str(j) ' '...
-                            '                AND `measurement_datasets`.`cyclecounter` <= ' int2str(endLimit) ' '...
-                            '                AND `measurement_datasets`.`measurement_id` = ' int2str(obj.id) ' '...
-                            '            ) AS `t1` '...
-                            'LEFT JOIN ' ...
-                            '( ' ...
-                            '           SELECT `measurement_datablobs`.`measurement_dataset_id`, ' ...
-                            '                   `measurement_datablobs`.`data`, ' ...
-                            '                   `measurement_datablobs`.`status` ' ...
-                            '           FROM `measurement_datablobs` ' ...
-                            '           WHERE   `measurement_datablobs`.`instrument_id` =  ' int2str(obj.instruments(i).id ) ' ' ...
-                            ') AS `t2` ' ...
-                            '   ON `t1`.`id` = `t2`.`measurement_dataset_id` ;'];
-                        obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
-                        
-                        
-                        
-                        
-                        j=endLimit+1;
+                        obj.dataset_list  = [];
+                        j=obj.start_cycleCount;
+                        tic
+                        disp(newline + "  -------" + obj.instruments(i).name + "-----" );
+                        while j<obj.end_cycleCount
+
+                            endLimit = j+Limit ;
+                            if j+Limit > obj.end_cycleCount
+                                endLimit= obj.end_cycleCount;
+                            end
+
+
+                            sqlquery = ['SELECT  `t1`.`cyclecounter`,  ' ...
+                                '       `t1`.`status`, ' ...
+                                '       `t2`.`data`, ' ...
+                                '       `t2`.`status` ' ...
+                                'FROM '  ...
+                                '         (SELECT `measurement_datasets`.`id`, '...
+                                '                    `measurement_datasets`.`cyclecounter`, ' ...
+                                '                    `measurement_datasets`.`status` '...
+                                '            FROM `measurement_datasets` '...
+                                '            WHERE `measurement_datasets`.`cyclecounter` >= ' int2str(j) ' '...
+                                '                AND `measurement_datasets`.`cyclecounter` <= ' int2str(endLimit) ' '...
+                                '                AND `measurement_datasets`.`measurement_id` = ' int2str(obj.id) ' '...
+                                '            ) AS `t1` '...
+                                'LEFT JOIN ' ...
+                                '( ' ...
+                                '           SELECT `measurement_datablobs`.`measurement_dataset_id`, ' ...
+                                '                   `measurement_datablobs`.`data`, ' ...
+                                '                   `measurement_datablobs`.`status` ' ...
+                                '           FROM `measurement_datablobs` ' ...
+                                '           WHERE   `measurement_datablobs`.`instrument_id` =  ' int2str(obj.instruments(i).id ) ' ' ...
+                                ') AS `t2` ' ...
+                                '   ON `t1`.`id` = `t2`.`measurement_dataset_id` ;'];
+                            obj.dataset_list = [obj.dataset_list;select(obj.conn,sqlquery)];
+
+
+
+
+                            j=endLimit+1;
+                        end
+                        if isempty(obj.dataset_list)
+                            warning off backtrace;
+                            warning("Measurement contains no data");
+                            warning on backtrace;
+                            return;
+                        elseif obj.dataset_list.cyclecounter(1)==0
+                            obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
+                        end
+                     % store missing cycles per instruments    
+                    cycleSequence = obj.start_cycleCount:1:obj.end_cycleCount;
+                    missingCycles(i,1) = {setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)')};
+
+
+
+                        extrationTime = toc;
+                        disp("  - Extraction time: " + extrationTime + " s");
+                        totalExtrationTime = totalExtrationTime + extrationTime;
+                        [obj, processingTime] = processData_DB(obj,i,addDistSubs);
+                        totalProcessingTime = totalProcessingTime + processingTime;
                     end
-                    if isempty(obj.dataset_list)
-                        warning off backtrace;
-                        warning("Measurement contains no data");
-                        warning on backtrace;
-                        return;
-                    elseif obj.dataset_list.cyclecounter(1)==0
-                        obj.dataset_list.cyclecounter= obj.dataset_list.cyclecounter+1;
-                    end
-                    
-                    %             cycleSequence = obj.start_cycleCount:1:obj.end_cycleCount;
-                    %             missingCycles = setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)');
-                    %
-                    %             if ~isempty(missingCycles)
-                    %                 warning off backtrace;
-                    %                 warning(" %i cyclecounters are missing:(first 25 are shown)\n%s %s", size(missingCycles,2),join(string(missingCycles(1:min([25 size(missingCycles,2)]))),", "));
-                    %                 warning on backtrace;
-                    %             end
-                    
-                    
-                    
-                    
-                    
-                    extrationTime = toc;
-                    disp("  - Extraction time: " + extrationTime + " s");
-                    totalExtrationTime = totalExtrationTime + extrationTime;
-                    [obj, processingTime] = processData_DB(obj,i,addDistSubs);
-                    totalProcessingTime = totalProcessingTime + processingTime;
-                end
             end
+                 if sum(cellfun(@isempty,missingCycles))==0
+                     if isequal(missingCycles{1},missingCycles{:})
+                        warning off backtrace;
+                        warning("All instruments miss following cycle counters: (first 25 are shown)\n%s %s", ...
+                                join(string(missingCycles{1}(1:min([25 size(missingCycles{1},2)]))),", "));
+                        warning on backtrace;
+                     else
+                         for i= 1: obj.n_instruments
+                            warning off backtrace;
+                            warning(" %s   misses following cycle counters: (first 25 are shown)\n%s %s", ...
+                                obj.instruments(i).name ,...
+                                join(string(missingCycles{1}(1:min([25 size(missingCycles{1},2)]))),", "));
+                            warning on backtrace;
+                         end
+                     end     
+                end
+     
+                
+                    
             disp(newline + "  ------ Total time -----");
             disp("    Extraction time: " + totalExtrationTime + " s");
             disp("    processing time: " + totalProcessingTime + " s");
@@ -493,12 +505,12 @@ classdef measurement < dynamicprops
         end
         %% *************** plot all instrument *******************
         
-        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,plotDownSample,downSampleFactor,showDistSubs)
+        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,plotDownSample,downSampleFactor,showDistSubs,showGPS)
             %All the instruments will be plotted
             addpath('libraries')
             for i = 1:obj.n_instruments
                 if isprop(obj.instruments(i),'extracted') && obj.instruments(i).extracted ==1 && includedInstruments(i)
-                    obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs);
+                    obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs,showGPS);
                 end
             end
             %  Software instruments

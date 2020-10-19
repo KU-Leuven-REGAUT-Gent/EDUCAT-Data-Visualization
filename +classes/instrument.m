@@ -181,13 +181,6 @@ classdef instrument < dynamicprops
                     obj.data(10) = classes.data("Sensor activate bit - Instrument 6","","boolean",maxCycleCount);
                     obj.data(11) = classes.data("Sensor activate bit - Instrument 7","","boolean",maxCycleCount);
                     obj.data(12) = classes.data("Sensor activate bit - Instrument 8","","boolean",maxCycleCount);
-                
-                case -1 % OAS
-                    obj.addprop('settings');
-                    obj.settings = classes.setting.empty(0,3);            
-                    obj.settings(1) = classes.setting("max speed Joystick",1026,"uint_8",1);
-                    obj.settings(2) = classes.setting("OAS Slope Start",1027,"uint_8",1);
-                    obj.settings(3) = classes.setting("OAS Slope Percentage",1028,"uint_8",1);
                 otherwise
                     error("Datatype unsupported");
             end
@@ -314,8 +307,6 @@ classdef instrument < dynamicprops
             end
         end
         
-
-        
         %% ***************Filtering *******************
         function obj = filter(obj,deadZone,FilterUnit)
             
@@ -358,8 +349,7 @@ classdef instrument < dynamicprops
                     flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
                     obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
-                    
-                    
+                             
                 case 162 % A2 JOYSTICK_PG_OUTPUT
                     R = 100;
                     % declaration of filtered data
@@ -470,7 +460,7 @@ classdef instrument < dynamicprops
         
         
         %%  *************** plot function *******************
-        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor, showDistSubs)
+        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor, showDistSubs,showGPS)
             % plot all the sensordata object of the instrument.
             % It plots with the following settings:
             % - Font size= 20
@@ -480,10 +470,14 @@ classdef instrument < dynamicprops
             % - The figures gets a title in the format:
             %   -   starttime - measurement ID: xx -
             fontSize = 20;
+            if obj.datatype ==193 && showGPS >0 || obj.datatype ~=193
             figure();
             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
             set(0, 'DefaultAxesFontSize', fontSize);
+            else 
+                return
+            end
             switch obj.datatype
                 case 161 % A1 JOYSTICK DX2
                     subplotArray(1) = subplot(2,3,1:3);
@@ -876,52 +870,12 @@ classdef instrument < dynamicprops
                     obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                 case 193 % C1 GPS MIN
-                   
-                    subplotArray(1) = subplot(2,1,1);
-                    obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
-                    subplotArray(2) = subplot(2,1,2);
-                    obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
-                    Title = [obj.name newline  '- ' ...
-                        datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
-                    try
-                        sgtitle(Title,'fontsize',fontSize+2);
-                    catch
-                        suptitle(Title);
-                    end
-                    linkaxes(subplotArray,'x');
-                    figure();
-                    set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
-                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-                    set(0, 'DefaultAxesFontSize', fontSize);
-                    subplotArray(1) = subplot(3,1,1);
-                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
-                    subplotArray(2) = subplot(3,1,2);
-                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
-                    subplotArray(3) =subplot(3,1,3);
-                    obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
-                    linkaxes(subplotArray,'x');
-                    Title = [obj.name newline  '- ' ...
-                        datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
-                    try
-                        sgtitle(Title,'fontsize',fontSize+2);
-                    catch
-                        suptitle(Title);
-                    end
-                    figure()
-                    set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
-                    set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-                    set(0, 'DefaultAxesFontSize', fontSize);
-                    if plotDownSample
-                        factor = size(obj.data(2).values,1)/downSampleFactor;
-                        plt(obj.data(1).values, obj.data(2).values,'+','downsample',factor);
-                        xlabel(obj.data(1).name);
-                        ylabel(obj.data(2).name);
-                    else
-                     
-                        plot(obj.data(1).values, obj.data(2).values,'+');
-                             Title = [obj.name newline  '- ' ...
+                   if showGPS >0
+                        subplotArray(1) = subplot(2,1,1);
+                        obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        subplotArray(2) = subplot(2,1,2);
+                        obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                        Title = [obj.name newline  '- ' ...
                             datestr(datetime(startTime), ...
                             'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
                         try
@@ -929,21 +883,65 @@ classdef instrument < dynamicprops
                         catch
                             suptitle(Title);
                         end
-                         xlabel('Longitude','fontsize',fontSize);
-                        ylabel('lattitude','fontsize',fontSize);
-                        
+                        linkaxes(subplotArray,'x');
+                        figure();
+                        set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                        set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                        set(0, 'DefaultAxesFontSize', fontSize);
+                        subplotArray(1) = subplot(3,1,1);
+                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        subplotArray(2) = subplot(3,1,2);
+                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        subplotArray(3) =subplot(3,1,3);
+                        obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        linkaxes(subplotArray,'x');
+                        Title = [obj.name newline  '- ' ...
+                            datestr(datetime(startTime), ...
+                            'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        try
+                            sgtitle(Title,'fontsize',fontSize+2);
+                        catch
+                            suptitle(Title);
+                        end
+                   end
+                   if showGPS == 1 || showGPS == 3
+                            figure()
+                            set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                            set(0, 'DefaultAxesFontSize', fontSize);
+                            if plotDownSample
+                                factor = size(obj.data(2).values,1)/downSampleFactor;
+                                plt(obj.data(1).values, obj.data(2).values,'+','downsample',factor);
+                                xlabel(obj.data(1).name);
+                                ylabel(obj.data(2).name);
+                            else
+                                plot(obj.data(1).values, obj.data(2).values,'+');
+                                Title = [obj.name newline  '- ' ...
+                                datestr(datetime(startTime), ...
+                                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                                try
+                                    sgtitle(Title,'fontsize',fontSize+2);
+                                catch
+                                    suptitle(Title);
+                                end
+                                xlabel('Longitude','fontsize',fontSize);
+                                ylabel('lattitude','fontsize',fontSize);
+                            end
+                   end
+                   if showGPS == 2 || showGPS == 3
                         % with satelitte view
                         figure()
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
-                         gx =geoscatter(obj.data(2).values, obj.data(1).values);
+                         gx =geoscatter(obj.data(2).values(:), obj.data(1).values(:));
                          gx.Parent.FontSize =fontSize;
                          geobasemap satellite
                          [latlim, lonlim] = geolimits;
                          geolimits([latlim(1)-0.0009 latlim(2)+0.0009],[lonlim(1)-0.0009 lonlim(2)+0.0009]) ;
+                   end
 %                        
-                    end
+                    
 
                     
                 case 194 % C2 GPS STATUS
@@ -1079,7 +1077,7 @@ classdef instrument < dynamicprops
                     suptitle(Title);
                 end
             end
-            pause(0.1)
+            %pause(0.1)
         end
         
         %%  Local plot functions
