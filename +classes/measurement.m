@@ -589,8 +589,12 @@ classdef measurement < dynamicprops
     info.userName= string(obj.user_name);
     
     info.startTime= datestr(obj.start_time,'dd/mm/yyyy HH:MM:SS.FFF');
-    info.endTime= datestr(obj.end_time,'dd/mm/yyyy HH:MM:SS.FFF');
-    assignin('base',strcat('ID',num2str(obj.id),'_info'),info);
+    if isnat(obj.end_time)
+        info.endTime= "no valid end time";
+    else
+        info.endTime= datestr(obj.end_time,'dd/mm/yyyy HH:MM:SS.FFF');
+    end
+         assignin('base',strcat('ID',num2str(obj.id),'_info'),info);
     
     
      assignin('base',strcat('ID',num2str(obj.id),'_OAS'),obj.OAS);
