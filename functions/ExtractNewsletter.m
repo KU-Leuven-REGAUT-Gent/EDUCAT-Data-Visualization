@@ -118,13 +118,13 @@ filename =[datestr(now,'yyyy-mm-dd HH-MM')   '_EDUCAT_newsletter_extract.xlsx'];
                     ' ON `submissions`.`id` = `t6`.`submission_id`;']; 
 
          extract = select( conn,sqlquery);
-         %% Validation of emailaddresses
+         % Validation of emailaddresses
          
         rgx = '^[a-zA-Z0-9\._]+\@[a-zA-Z0-9\.\-]+\.[a-zA-Z]+$';
         ValidEmail = regexp(extract.Email,rgx);
          extract.ValidEmail(1: length(extract.Email)) ="nok";
         extract.ValidEmail( cellfun(@(x) isequal(x,1),ValidEmail)) = "ok";
-        %% Write to sheet
+        % Write to sheet
         
          writetable(extract,filename,'Sheet',country.name(i),'Range','A1')
 end
