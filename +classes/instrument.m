@@ -481,7 +481,7 @@ classdef instrument < dynamicprops
             switch obj.datatype
                 case 161 % A1 JOYSTICK DX2
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     subplotArray(2) =  subplot(2,3,4);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) =  subplot(2,3,5);
@@ -576,13 +576,13 @@ classdef instrument < dynamicprops
                     
                 case 162 % A2 JOYSTICK PG
                     subplotArray(1) = subplot(2,4,1:4);
-                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,4,5);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,4,6);
                     obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(2,4,7);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(5) = subplot(2,4,8);
                     obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title =[obj.name newline  '- ' ...
@@ -674,7 +674,7 @@ classdef instrument < dynamicprops
                     
                 case 163 % A3 JOYSTICK LINX
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(2,3,4);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) =subplot(2,3,5);
@@ -771,11 +771,11 @@ classdef instrument < dynamicprops
                 case 177 % B1 IMU 9AXIS
                     % accelleration 
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -791,11 +791,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -811,11 +811,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(7).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(8).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(9).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -832,23 +832,23 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(10).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(11).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(12).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(12).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(13).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(13).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');                   
                     
                     
                 case 178 % B2 IMU 6AXIS
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -863,11 +863,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     subplotArray(3) =subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                 case 193 % C1 GPS MIN
                    if showGPS >0
@@ -949,15 +949,16 @@ classdef instrument < dynamicprops
                 case 195 % C3 GPS DATA STATUS
                     disp([obj.name " is not yet programmed"]);
                 case 209 % D1 CAN DISTANCE NODES (US)
-                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                 case 210 % D2 CAN DISTANCE NODES (IR)
-                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+%                     ylim([0 max(obj.data(1).values)*1.2]);
                 case 211 % D3 CAN DISTANCE NODES (US+IR)
                     if showDistSubs == false || size(obj.data,2)==1
-                        obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                     else
                     subplotArray(1) =subplot(2,2,1:2);
-                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     subplotArray(2) =subplot(2,2,3);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,2,4);
@@ -966,10 +967,11 @@ classdef instrument < dynamicprops
                     end
                 case 212 % D4 CAN DISTANCE NODES (US+2IR)
                      if showDistSubs == false || size(obj.data,2)==1
-                         obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                         obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                      else
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    ylim([0 max(obj.data(1).values)*1.2]);
                     subplotArray(2) = subplot(2,3,4);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,3,5);
@@ -980,10 +982,10 @@ classdef instrument < dynamicprops
                      end
                 case 213 % D5 CAN DISTANCE NODES (US+3IR)
                     if showDistSubs == false || size(obj.data,2)==1
-                        obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                     else
                     subplotArray(1) =subplot(2,4,1:4);
-                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,4,5);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,4,6);
@@ -996,10 +998,10 @@ classdef instrument < dynamicprops
                     end
                 case 214 % D6 CAN DISTANCE NODES (4IR)
                     if showDistSubs == false || size(obj.data,2)==1                    
-                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                     else
                     subplotArray(1) = subplot(2,4,1:4);                    
-                    obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     subplotArray(2) = subplot(2,4,5);
                     obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
                     subplotArray(3) = subplot(2,4,6);
@@ -1011,9 +1013,9 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     end
                 case 215 % D7 CAN DISTANCE NODES (4IR) Only Calculated Value
-                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                 case 216 % D8 CAN DISTANCE NODES (US+3IR) Only Calculated Value
-                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
                 case 225 % E1 Real Time Clock
                     obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
                 case 241 % F1 USB AD as Instrument
