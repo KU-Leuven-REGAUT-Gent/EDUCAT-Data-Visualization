@@ -1,4 +1,4 @@
-# Change Log
+# Change Log EDUCAT data visualization
 All notable changes to the [EDUCAT data visualization](https://github.com/fredericdepuydt/EDUCAT-Data-Visualization.git).
 
 <br/>
