@@ -460,7 +460,7 @@ classdef instrument < dynamicprops
         
         
         %%  *************** plot function *******************
-        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor, showDistSubs,showGPS)
+        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor, showDistSubs,showGPS)
             % plot all the sensordata object of the instrument.
             % It plots with the following settings:
             % - Font size= 20
@@ -1069,6 +1069,7 @@ classdef instrument < dynamicprops
                     obj.data(12).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
             end
+     
             Title = [obj.name newline  '- ' ...
                 datestr(datetime(startTime), ...
                 'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
@@ -1079,8 +1080,42 @@ classdef instrument < dynamicprops
                     suptitle(Title);
                 end
             end
-            %pause(0.1)
-        end
+            
+            % Joystick path length
+            if( isprop(obj,'pathLength'))
+                fontSize = 20;
+                
+                figure();
+                set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                set(0, 'DefaultAxesFontSize', fontSize);
+                nrPlots = sum(showJoystickPath);
+                subplot(1 + (nrPlots>0),2,1:2)
+                plot(obj.pathLength.d )
+                   Title = [datestr(datetime(startTime), ...
+                'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
+                'Joystick path length' ];
+            
+            title(Title,'fontsize',20);
+            
+                if showJoystickPath(1) 
+                    subplot(1 + (nrPlots>0),2,3:3+(nrPlots==1))
+                    plot(obj.pathLength.dx )
+                    title('dx','fontsize',fontSize)
+               
+                end
+                
+                if showJoystickPath(2)
+                    subplot(1 + (nrPlots>0),2,4-(nrPlots==1):4)
+                    plot(obj.pathLength.dy )
+                 title('dy','fontsize',fontSize)
+                end
+                
+                       
+        
+            end
+  
+    end
         
         %%  Local plot functions
         
@@ -1150,7 +1185,22 @@ classdef instrument < dynamicprops
             end
             xlabel(obj.data(xDataNr).name);
             ylabel(obj.data(yDataNr).name);
-        end
+        end     
         
+        function obj  = joystickPathLength(obj)
+            if sum(obj.datatype == (161:163))
+            
+                if( ~isprop(obj,'pathLength'))
+                    obj.addprop('pathLength');
+                end
+
+                obj.pathLength.dx = [0; obj.data(2).values(2:end)-obj.data(2).values(1:end-1)]; % turn
+                obj.pathLength.dy = [0; obj.data(3).values(2:end)-obj.data(3).values(1:end-1)]; % speed
+                obj.pathLength.d = sqrt(obj.pathLength.dx.^2 + obj.pathLength.dy.^2);
+            
+            end
+        end
     end
+    
+
 end

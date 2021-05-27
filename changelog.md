@@ -1,11 +1,22 @@
 # Change Log EDUCAT data visualization
-All notable changes to the [EDUCAT data visualization](https://github.com/fredericdepuydt/EDUCAT-Data-Visualization.git).
+All notable changes to the [EDUCAT data visualization](https://github.com/fredericdepuydt/EDUCAT-Data-Visualization.git) are listed.
 
 <br/>
+
+## [1.0.24] - 2021-05-27
+### Added
+-  added joystick path length
+
+### Changed
+
+### Fixed
+<br/>
+
 
 ## [1.0.23] - 2021-05-03
 ### Added
 - Extraction function for submissions
+
 ### Changed
 
 ### Fixed
@@ -14,6 +25,7 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ## [1.0.22] - 2021-02-11 & 23
 ### Added
 - Extraction function for the newsletter
+
 ### Changed
 - Y limits of plots
 
@@ -21,10 +33,11 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 <br/>
 
 ## [1.0.21] - 2020-12-16
+
 ### Added
 - Option to specify the report name
-### Changed
 
+### Changed
 
 ### Fixed
 <br/>
@@ -35,6 +48,7 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 - OAS characteristics
 - Extra GPS plot with satelitte view
 - Warning missing cycle counters
+
 ### Changed
 
 
@@ -50,12 +64,10 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 - Processing per instrument
 - Popup to deselect instruments that must be processed
 - Popup to select which instruments must be plotted
+
 ### Changed
 
-
 ### Fixed
-
-
  <br/>
 
 ## [1.0.18] - 2020-07-31
@@ -63,8 +75,9 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 
 ### Changed
 - SQL statements for laravel framework
+
 ### Fixed
-- STP
+- STP_setup
  <br/>
 
 ## [1.0.17] - 2020-07-24 & 27
@@ -72,6 +85,7 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 - Exclude individual distance sensors during processing
 - Downsampling of the plots
 - Optimized dataset_list memory usage
+
 ### Changed
 
 ### Fixed
@@ -90,9 +104,11 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ## [1.0.15] - 2020-07-10
 ### Added
 - Export live script
+
 ### Changed
 - Plots
 - No own code section anymore
+
 ### Fixed
 - Warning when saving workspace and m.conn
  <br/>
@@ -110,6 +126,7 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
 - Bouts calculation of joystick movements
 - Github section
+
 ### Changed
 
 ### Fixed
@@ -119,6 +136,7 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
 - Filtering an corresponding plots
 - Joystick deflection pattern
+
 ### Changed
 
 
@@ -143,7 +161,9 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 - Order of measeruments table
 - Added heatmaps
 - Extra plots
+
 ### Changed
+
 ### Fixed
  <br/>
 
@@ -152,8 +172,10 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
 - Help documentation
 - NaN for missing cycles
+
 ### Changed
 - Export to workspace and save to .mat file
+
 ### Fixed
  <br/>
 
@@ -161,9 +183,11 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
  
 ### Added
 - Get specific periods of the measurements
+
 ### Changed
 - Optimization of the code
 - Clean up
+
 ### Fixed
  <br/>
 
@@ -172,7 +196,9 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
  - Timing of supfunctions
  - Memory usage
+
 ### Changed
+
 ### Fixed
  <br/>
 
@@ -181,7 +207,9 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
  - JDBC folder
  - Save workspace to .mat file
+
 ### Changed
+
 ### Fixed
 - fix plot error and max function for limit value
  <br/>
@@ -190,8 +218,10 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
  
 ### Added
  - Display expanded measurement table 
+
 ### Changed
 - Exclude measurement object in workspace when saving to .mat file
+
 ### Fixed
  <br/>
 
@@ -200,7 +230,9 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
  - JDBC folder
  - Save workspace to .mat file
+
 ### Changed
+
 ### Fixed
 - Fix plot error and max function for limit value
  <br/>
@@ -210,6 +242,7 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
 ### Added
  - Export to workspace
  - Max cycle counter and counter
+
 ### Changed
 ### Fixed
  <br/>
@@ -218,9 +251,11 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
  
 ### Added
  - Heatmap
+
 ### Changed
   - Plots
   - Linked axes of subplots
+
 ### Fixed
  <br/>
 
@@ -228,8 +263,10 @@ All notable changes to the [EDUCAT data visualization](https://github.com/freder
  
 ### Added
  - Live script
+
 ### Changed
   - Cleaning up
+
 ### Fixed
  <br/>
  

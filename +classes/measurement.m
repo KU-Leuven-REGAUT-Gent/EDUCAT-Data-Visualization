@@ -147,14 +147,13 @@ classdef measurement < dynamicprops
             obj.list.stopped_at = string(obj.list.stopped_at);
             %obj.list.stopped_at = datetime(obj.list.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','UTC');
         end
-        
-        
+               
         function obj = set_measurement_ID(obj,measurement_id)
             %set measurement id
             obj.id = measurement_id;
         end
-        %%  *************** declaration of instruments *******************
         
+        %%  *************** declaration of instruments *******************  
         function obj = declaration(obj,date,dur,addDistSubs)
             % gets the maximum cycle count of the measurement, the
             % measurements info and the list of sensors of the set up.
@@ -368,8 +367,7 @@ classdef measurement < dynamicprops
             %
         end
         
-        %% *********************** Get data ***************************
-        
+        %% *********************** Get data ***************************       
         function obj = get_dataset_DB(obj,excludeInstruments,addDistSubs)
             %Get the dataset from the 'STP_measurement_dataset table'.
             %This contains all the data inside the chosen range
@@ -473,6 +471,7 @@ classdef measurement < dynamicprops
             disp("    Extraction time: " + totalExtrationTime + " s");
             disp("    processing time: " + totalProcessingTime + " s");
         end
+        
         %% processing
         function [obj,processingTime] = processData_DB(obj,i,addDistSubs)
             %The declared instruments will be filled with the sensor data.
@@ -505,12 +504,12 @@ classdef measurement < dynamicprops
         end
         %% *************** plot all instrument *******************
         
-        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,plotDownSample,downSampleFactor,showDistSubs,showGPS)
+        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS)
             %All the instruments will be plotted
             addpath('libraries')
             for i = 1:obj.n_instruments
                 if isprop(obj.instruments(i),'extracted') && obj.instruments(i).extracted ==1 && includedInstruments(i)
-                    obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,plotDownSample,downSampleFactor,showDistSubs,showGPS);
+                    obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS);
                 end
             end
             %  Software instruments
