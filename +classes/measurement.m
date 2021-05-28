@@ -502,6 +502,13 @@ classdef measurement < dynamicprops
             obj.dataset_list = [];
             clear dataset shiftedData
         end
+        
+        function obj = removeData(obj,startTime,endTime)
+            for i = 1:obj.n_instruments
+                
+                obj.instruments(i).remove_data(startTime,endTime)
+            end
+        end
         %% *************** plot all instrument *******************
         
         function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS)

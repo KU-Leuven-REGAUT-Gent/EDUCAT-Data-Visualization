@@ -92,6 +92,12 @@ classdef data
             
             
         end
+        
+        function obj = remove_value(obj,cyclecounter_list)
+
+            obj.values(cyclecounter_list) = [];
+            
+        end
         function obj = filteredData(obj,cyclecounter,data)
             obj.values(cyclecounter) = data;
         end
