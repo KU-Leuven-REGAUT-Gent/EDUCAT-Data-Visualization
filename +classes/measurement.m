@@ -33,6 +33,9 @@ classdef measurement < dynamicprops
             name, ...
             setup_id, ...
             setup_name, ...
+            record_start_time,...
+            record_end_time,...
+            record_duration,...
             start_time, ...
             end_time, ...
             start_cycleCount,...
@@ -279,6 +282,9 @@ classdef measurement < dynamicprops
                 obj.end_time = obj.start_time + seconds(double(pulled_cycleCounts)*0.02);
             end
             
+            obj.record_start_time = obj.start_time;
+            obj.record_end_time = obj.end_time;
+            obj.record_duration = obj.record_end_time - obj.record_start_time;
             % Selecting setup
             sqlquery = ['SELECT `t1`.`id`, '...
                 '       TRIM(`t1`.`name_en`) AS `name`, '...
@@ -504,10 +510,88 @@ classdef measurement < dynamicprops
         end
         
         function obj = removeData(obj,startTime,endTime)
-            for i = 1:obj.n_instruments
+                regexDate = '^(0[1-9]|[1-2][0-9]|3[0-1])[-/](0[1-9]|1[0-2])[-/]([0-9]{4})( ([0-1][0-9]|2[0-3])[:h]([0-5][0-9])(?:[:m](?:([0-5][0-9])(?:[.,]([0-9]{1,3})|s?)?)?)?)?$';
+                startTimeCapture = regexp(startTime,regexDate, 'tokens');
+                endTimeCapture = regexp(endTime,regexDate, 'tokens');
                 
-                obj.instruments(i).remove_data(startTime,endTime)
+                % check if date is correct
+                trials = 0;
+                while  isempty(startTimeCapture) && trials <=3
+                    if trials ==3
+                        exit
+                    end
+                    warning off backtrace;
+                    warning("Wrong format! the folowing types are supported: for dates 'dd/MM-yyyy' or 'dd-MM-yyyy' and the following symbols for time: 'h','m','s',':' and '.' for miliseconds");
+                    warning on backtrace;
+                    startTime = input('Start time: ','s');
+                    startTimeCapture = regexp(startTime,regexDate, 'tokens');
+                    trials = trials +1;
+                end
+                
+                % split date and reformat the date
+                dateSplit = ["00","00","0000","00","00","00","000"];
+                splitted = split(startTime,{'-','/',':','h','m','s','.',' '},2);
+                dateSplit(1:size(splitted,2)) = splitted;
+                dateSymbols = ["-","-"," ",":",":",".",""];
+                dateArray = reshape([dateSplit(1:7) ;dateSymbols(1:7)],1,[]);
+                dateConverted = strjoin(dateArray(1:end-1),"");
+                
+                 startTimeConv=datetime(dateConverted,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS','TimeZone','local');
+            % start time of measurement to the next sample if start
+                 % time is not a multiple of 0.02
+            startDiff =time2num(startTimeConv  - obj.start_time,"seconds");
+            if mod(startDiff,0.02) > 1.4225e-16
+             startTimeConv =  startTimeConv + seconds(0.02-mod(startDiff,0.02));
             end
+                 % ----- end time check --------
+                 % check if date is correct
+                trials = 0;
+                while  isempty(endTimeCapture) && trials <=3
+                    if trials ==3
+                        exit
+                    end
+                    warning off backtrace;
+                    warning("Wrong format! the folowing types are supported: for dates 'dd/MM-yyyy' or 'dd-MM-yyyy' and the following symbols for time: 'h','m','s',':' and '.' for miliseconds");
+                    warning on backtrace;
+                    endTime = input('Start time: ','s');
+                    endTimeCapture = regexp(endTime,regexDate, 'tokens');
+                    trials = trials +1;
+                end
+                
+                % split date and reformat the date
+                dateSplit = ["00","00","0000","00","00","00","000"];
+                splitted = split(endTime,{'-','/',':','h','m','s','.',' '},2);
+                dateSplit(1:size(splitted,2)) = splitted;
+                dateSymbols = ["-","-"," ",":",":",".",""];
+                dateArray = reshape([dateSplit(1:7) ;dateSymbols(1:7)],1,[]);
+                dateConverted = strjoin(dateArray(1:end-1),"");
+       
+                 endTimeConv=datetime(dateConverted,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS','TimeZone','local');
+             % end time of measurement to the next sample if start
+                 % time is not a multiple of 0.02
+                 endDiff =time2num(endTimeConv - obj.start_time,"seconds");
+                 if   time2num(obj.end_time - endTimeConv,"seconds") >0
+                     if mod(endDiff,0.02) ~= 0
+                        endTimeConv =  endTimeConv + seconds(0.02-mod(endDiff,0.02));
+                     end
+                
+                     endCycle= round(time2num(endTimeConv  - obj.start_time,"seconds")/0.02)+1;             
+                           
+                 else 
+                     endTimeConv = obj.end_time;
+                     endCycle = numel(obj.instruments(1).data(1).values);
+                 end
+             
+           
+            startCycle= round(time2num(startTimeConv  - obj.start_time,"seconds")/0.02)+1;
+         
+            
+            
+            for i = 1:obj.n_instruments
+                obj.instruments(i).remove_data( startCycle:endCycle);
+            end
+             obj.end_time = endTimeConv;
+            obj.start_time = startTimeConv;
         end
         %% *************** plot all instrument *******************
         
@@ -600,6 +684,18 @@ classdef measurement < dynamicprops
     else
         info.endTime= datestr(obj.end_time,'dd/mm/yyyy HH:MM:SS.FFF');
     end
+    info.recordStartTime = obj.record_start_time;
+    info.recordEndTime = obj.record_start_time;
+    info.recordDuration = obj.record_duration;
+
+    for i = 1: obj.n_instruments
+        if sum(obj.instruments(i).datatype == (161:163))>0
+            break
+        end
+    end
+   if isprop(obj. instruments(i),'time')
+    info.times = obj. instruments(i).time;
+   end
          assignin('base',strcat('ID',num2str(obj.id),'_info'),info);
     
     

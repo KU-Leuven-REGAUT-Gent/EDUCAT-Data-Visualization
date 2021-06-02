@@ -308,127 +308,128 @@ classdef instrument < dynamicprops
         end
         
         %%  *************** remove data function *******************
-        function obj = remove_data(obj,startTime,endTime)
+        function obj = remove_data(obj,cyclecounter_Keeplist)
             
-             switch obj.datatype
+            switch obj.datatype
                 case 161 % A1
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3));
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,4));
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,3) ~= 0 | blob(:,4) ~= 0);
-                    obj.data(6) = obj.data(6).remove_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
+                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
                 case 162 % A2
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3));
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,4));
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,6));
-                    obj.data(6) = obj.data(6).remove_value(cyclecounter_list, blob(:,3) ~= 0 | blob(:,4) ~= 0);
-                    obj.data(7) = obj.data(7).remove_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    obj.data(6) = obj.data(6).remove_value(cyclecounter_Keeplist);
+                    flankDet = [obj.data(6).values ;0]- [0; obj.data(6).values];
+                    obj.data(7) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(8) = obj.data(8).filteredData(1,sum(rmmissing(obj.data(6).values))*0.02);
                 case 163 % A3
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3));
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,4));
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) =  obj.data(6).remove_value(cyclecounter_list, blob(:,4) ~= 0 | blob(:,5) ~= 0);
-                    obj.data(6) = obj.data(6).remove_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) =  obj.data(6).remove_value(cyclecounter_Keeplist);
+                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
+                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
                 case 177 % B1
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3:4));
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,5:6));
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,7:8));
-                    obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,9:10));
-                    obj.data(6) = obj.data(6).remove_value(cyclecounter_list, blob(:,11:12));
-                    obj.data(7) = obj.data(7).remove_value(cyclecounter_list, blob(:,13:14));
-                    obj.data(8) = obj.data(8).remove_value(cyclecounter_list, blob(:,15:16));
-                    obj.data(9) = obj.data(9).remove_value(cyclecounter_list, blob(:,17:18));
-                    obj.data(10) = obj.data(10).remove_value(cyclecounter_list, blob(:,19:20));
-                    obj.data(11) = obj.data(11).remove_value(cyclecounter_list, blob(:,21:22));
-                    obj.data(12) = obj.data(12).remove_value(cyclecounter_list, blob(:,23:24));
-                    obj.data(13) = obj.data(13).remove_value(cyclecounter_list, blob(:,25:26));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    obj.data(6) = obj.data(6).remove_value(cyclecounter_Keeplist);
+                    obj.data(7) = obj.data(7).remove_value(cyclecounter_Keeplist);
+                    obj.data(8) = obj.data(8).remove_value(cyclecounter_Keeplist);
+                    obj.data(9) = obj.data(9).remove_value(cyclecounter_Keeplist);
+                    obj.data(10) = obj.data(10).remove_value(cyclecounter_Keeplist);
+                    obj.data(11) = obj.data(11).remove_value(cyclecounter_Keeplist);
+                    obj.data(12) = obj.data(12).remove_value(cyclecounter_Keeplist);
+                    obj.data(13) = obj.data(13).remove_value(cyclecounter_Keeplist);
                 case 178 % B2
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3:4));
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,5:6));
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,7:8));
-                    obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,9:10));
-                    obj.data(6) = obj.data(6).remove_value(cyclecounter_list, blob(:,11:12));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    obj.data(6) = obj.data(6).remove_value(cyclecounter_Keeplist);
                 case 193 % C1
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:4));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,5:8));
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,9:12));
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,13:16));
-                    obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,17));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
                 case 194 % C2
                 case 195 % C3
                 case 209 % D1
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                 case 210 % D2
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                 case 211 % D3
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    if addDistSubs
-                        obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3:4));
-                        obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,5));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    if numel(obj.data,1)>1
+                        obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                        obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
                     end
                 case 212 % D4
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    if addDistSubs
-                        obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3:4));
-                        obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,5));
-                        obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,6));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    if numel(obj.data,1)>1
+                        obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                        obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                        obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
                     end
                 case 213 % D5
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    if addDistSubs
-                        obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3:4));
-                        obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,5));
-                        obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,6));
-                        obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,7));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    if numel(obj.data,1)>1
+                        obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                        obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                        obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                        obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
                     end
                 case 214 % D6
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
-                    if addDistSubs
-                        obj.data(2) = obj.data(2).remove_value(cyclecounter_list, blob(:,3));
-                        obj.data(3) = obj.data(3).remove_value(cyclecounter_list, blob(:,4));
-                        obj.data(4) = obj.data(4).remove_value(cyclecounter_list, blob(:,5));
-                        obj.data(5) = obj.data(5).remove_value(cyclecounter_list, blob(:,6));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    if numel(obj.data,1)>1
+                        obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                        obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                        obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                        obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
                     end
                 case 215 % D7
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                 case 216 % D8
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:2));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                 case 225 % E1
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1:8));
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                 case 241 % F1
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, bitand(blob(:,2),1)==1);
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, bitand(blob(:,2),2)==2);
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, bitand(blob(:,2),4)==4);
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
                 case 242 % F2
-                    obj.data(1) = obj.data(1).remove_value(cyclecounter_list, blob(:,1));
-                    obj.data(2) = obj.data(2).remove_value(cyclecounter_list, bitand(blob(:,2),1)==1);
-                    obj.data(3) = obj.data(3).remove_value(cyclecounter_list, bitand(blob(:,2),2)==2);
-                    obj.data(4) = obj.data(4).remove_value(cyclecounter_list, bitand(blob(:,2),4)==4);
-                    obj.data(5) = obj.data(5).remove_value(cyclecounter_list, bitand(blob(:,3),1)==1);
-                    obj.data(6) = obj.data(6).remove_value(cyclecounter_list, bitand(blob(:,3),2)==2);
-                    obj.data(7) = obj.data(7).remove_value(cyclecounter_list, bitand(blob(:,3),4)==4);
-                    obj.data(8) = obj.data(8).remove_value(cyclecounter_list, bitand(blob(:,3),8)==8);
-                    obj.data(9) = obj.data(9).remove_value(cyclecounter_list, bitand(blob(:,3),16)==16);
-                    obj.data(10) = obj.data(10).remove_value(cyclecounter_list, bitand(blob(:,3),32)==32);
-                    obj.data(11) = obj.data(11).remove_value(cyclecounter_list, bitand(blob(:,3),64)==64);
-                    obj.data(12) = obj.data(12).remove_value(cyclecounter_list, bitand(uint8(blob(:,3)),128)==128);
+                    obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
+                    obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
+                    obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
+                    obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
+                    obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    obj.data(6) = obj.data(6).remove_value(cyclecounter_Keeplist);
+                    obj.data(7) = obj.data(7).remove_value(cyclecounter_Keeplist);
+                    obj.data(8) = obj.data(8).remove_value(cyclecounter_Keeplist);
+                    obj.data(9) = obj.data(9).remove_value(cyclecounter_Keeplist);
+                    obj.data(10) = obj.data(10).remove_value(cyclecounter_Keeplist);
+                    obj.data(11) = obj.data(11).remove_value(cyclecounter_Keeplist);
+                    obj.data(12) = obj.data(12).remove_value(cyclecounter_Keeplist);
             end
         end
         
         %% ***************Filtering *******************
         function obj = filter(obj,deadZone,FilterUnit)
-            
-            
             switch obj.datatype
                 case 161 % A1 JOYSTICK_DX2_OUTPUT
                     R= 128;
@@ -442,11 +443,21 @@ classdef instrument < dynamicprops
                     
                     if  sum(filter)>0
                         if FilterUnit % percentage
-                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
+                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
+                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
                         else  % value
                             obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                             obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                        end
+                        
+                        if( ~isprop(obj,'filterSetting'))
+                            obj.addprop('filterSetting');
+                        end
+                        obj.filterSetting.deadZone = deadZone;
+                        if FilterUnit % percentage
+                             obj.filterSetting.unit = "%";
+                        else % value
+                             obj.filterSetting.unit = "bit(s)";
                         end
                     else
                         obj.filtered = false;
@@ -485,6 +496,15 @@ classdef instrument < dynamicprops
                             obj.data(9) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                             obj.data(10) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
+                        if( ~isprop(obj,'filterSetting'))
+                            obj.addprop('filterSetting');
+                        end
+                        obj.filterSetting.deadZone = deadzone;
+                        if FilterUnit % percentage
+                             obj.filterSetting.unit = "%";
+                        else % value
+                            obj.filterSetting.unit = "bit(s)";
+                        end
                     else
                         obj.filtered = false;
                         return;
@@ -517,6 +537,7 @@ classdef instrument < dynamicprops
                     
                     if sum(filter)>0
                         % declaration of filtered data
+                        
                         if FilterUnit % percentage
                             obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
                             obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
@@ -524,6 +545,16 @@ classdef instrument < dynamicprops
                             obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                             obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
                         end
+                        if( ~isprop(obj,'filterSetting'))
+                            obj.addprop('filterSetting');
+                        end
+                        obj.filterSetting.deadZone = deadzone;
+                        if FilterUnit % percentage
+                             obj.filterSetting.unit = "%";
+                        else % value
+                             obj.filterSetting.unit = "bit(s)";
+                        end
+                        
                     else
                         obj.filtered = false;
                         return
@@ -1199,7 +1230,7 @@ classdef instrument < dynamicprops
                 end
             end
             
-            % Joystick path length
+            % --------------------- Joystick path length ----------------------------
             if( isprop(obj,'pathLength'))
                 fontSize = 20;
                 time = seconds(0:(size(obj.pathLength.d,1)-1))*0.020 + startTime;
@@ -1216,7 +1247,7 @@ classdef instrument < dynamicprops
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
-                    'Momentary joystick path length' ];
+                    'Instantaneous joystick path length [RAW]' ];
                 
                 title(Title,'fontsize',20);
                 
@@ -1225,7 +1256,7 @@ classdef instrument < dynamicprops
                     plot(time,obj.pathLength.dx ,'LineWidth',2)
                     xlim(([min(time) (max(time))]));
                     xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
-                    title('dx','fontsize',fontSize)
+                    title('dx [RAW]','fontsize',fontSize)
                     
                 end
                 
@@ -1234,7 +1265,7 @@ classdef instrument < dynamicprops
                     plot(time,obj.pathLength.dy,'LineWidth',2 )
                     xlim(([min(time) (max(time))]));
                     xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
-                    title('dy','fontsize',fontSize)
+                    title('dy [RAW]','fontsize',fontSize)
                 end
                 linkaxes(subplotArray,'x');
                 % plot cumulative path
@@ -1244,19 +1275,71 @@ classdef instrument < dynamicprops
                 set(0, 'DefaultAxesFontSize', fontSize);
                 plot(time,obj.pathLength.cumd,'LineWidth',2 )
                 xlim(([min(time) (max(time))]));
-                text(time(50),obj.pathLength.cumd(end), "score: " + round(obj.pathLength.scoreD),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
-                text(time(50),obj.pathLength.cumd(end)*0.95, "smoothness: " + round(obj.pathLength.smoothness),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
-               
+                
                 %                 ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
-                    'Cumulative joystick path length' ];
+                    'Cumulative joystick path length (CJPL) [RAW]' ];
                 
                 title(Title,'fontsize',20);
+                text(time(50),obj.pathLength.cumd(end), "CJPL score: " + round(obj.pathLength.scoreD),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
+                text(time(50),obj.pathLength.cumd(end)*0.95, "Smoothness NJS: " + round(obj.pathLength.smoothness),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                 
+                display( "CJPL score: " + round(obj.pathLength.scoreD));
+                display("Smoothness NJS: " + round(obj.pathLength.smoothness)');
+                
+                % differences plots
+                figure();
+                set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                set(0, 'DefaultAxesFontSize', fontSize);
+                
+                subplotArray(1) = subplot(3,2,1);
+                plot(obj.pathLength.diff1.x,'LineWidth',2 )
+                %                 xlim(([min(time) (max(time))]));
+                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                Title = [datestr(datetime(startTime), ...
+                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
+                    'X diff 1' ];
+                title(Title,'fontsize',20);
+                
+                subplotArray(2) = subplot(3,2,2);
+                plot(obj.pathLength.diff1.y,'LineWidth',2 )
+                %                 xlim(([min(time) (max(time))]));
+                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                title('Y diff 1','fontsize',fontSize)
+                
+                % 2th diff
+                subplotArray(3) = subplot(3,2,3);
+                plot(obj.pathLength.diff2.x,'LineWidth',2 )
+                %                 xlim(([min(time) (max(time))]));
+                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                title('X diff 2','fontsize',fontSize)
+                
+                subplotArray(4) = subplot(3,2,4);
+                plot(obj.pathLength.diff2.y,'LineWidth',2 )
+                %                 xlim(([min(time) (max(time))]));
+                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                title('Y diff 2','fontsize',fontSize)
+                
+                % 3th diff
+                subplotArray(5) = subplot(3,2,5);
+                plot(obj.pathLength.diff3.x,'LineWidth',2 )
+                %                 xlim(([min(time) (max(time))]));
+                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                title('X diff 3','fontsize',fontSize)
+                
+                subplotArray(6) = subplot(3,2,6);
+                plot(obj.pathLength.diff3.y,'LineWidth',2 )
+                %                 xlim(([min(time) (max(time))]));
+                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                title('Y diff 3','fontsize',fontSize)
+                linkaxes(subplotArray,'x');
+                subplotArray=[];
             end
             
+            % --------------------- Filtered joystick path length ----------------------------
             if( isprop(obj,'filteredPathLength'))
                 fontSize = 20;
                 time = seconds(0:(size(obj.filteredPathLength.d,1)-1))*0.020 + startTime;
@@ -1273,7 +1356,7 @@ classdef instrument < dynamicprops
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
-                    'Filtered momentary joystick path length' ];
+                    'Filtered Instantaneous joystick path length' ];
                 
                 title(Title,'fontsize',20);
                 
@@ -1300,15 +1383,18 @@ classdef instrument < dynamicprops
                 set(0, 'DefaultAxesFontSize', fontSize);
                 plot(time,obj.filteredPathLength.cumd,'LineWidth',2 )
                 xlim(([min(time) (max(time))]));
-                text(time(50),obj.filteredPathLength.cumd(end), "score: " + round(obj.filteredPathLength.scoreD),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
-                text(time(50),obj.filteredPathLength.cumd(end)*0.95, "smoothness: " + round(obj.filteredPathLength.smoothness),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
+                text(time(50),obj.filteredPathLength.cumd(end), "Filtered CJPL score: " + round(obj.filteredPathLength.scoreD),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
+                text(time(50),obj.filteredPathLength.cumd(end)*0.95, "Filtered smoothness NJS: " + round(obj.filteredPathLength.smoothness),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
+                
                 %                 ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
-                    'Filtered cumulative joystick path length' ];
+                    'Filtered cumulative joystick path length (CJPL)' ];
                 
                 title(Title,'fontsize',20);
+                display( "Filtered CJPL score: " + round(obj.filteredPathLength.scoreD));
+                display("Filtered smoothness NJS: " + round(obj.filteredPathLength.smoothness)');
             end
             
         end
@@ -1382,7 +1468,7 @@ classdef instrument < dynamicprops
             xlabel(obj.data(xDataNr).name);
             ylabel(obj.data(yDataNr).name);
         end
-        
+        %%  Joystick functions
         function obj  = joystickPathLength(obj)
             if sum(obj.datatype == (161:163))
                 
@@ -1390,48 +1476,84 @@ classdef instrument < dynamicprops
                     obj.addprop('pathLength');
                 end
                 
+                if( ~isprop(obj,'time'))
+                    obj.addprop('time');
+                end
+                obj.time.measurement = numel(obj.data(2).values)*0.02;
+                
                 obj.pathLength.dx = [0; obj.data(2).values(2:end)-obj.data(2).values(1:end-1)]; % turn
                 obj.pathLength.dy = [0; obj.data(3).values(2:end)-obj.data(3).values(1:end-1)]; % speed
                 obj.pathLength.d = sqrt(obj.pathLength.dx.^2 + obj.pathLength.dy.^2);
                 obj.pathLength.d(isnan(obj.pathLength.d))=0;
                 obj.pathLength.cumd = cumsum(obj.pathLength.d);
                 obj.pathLength.scoreD = obj.pathLength.cumd(end);
-                obj.pathLength.smoothness = obj.joystickSmoothness(2);
+                [obj.pathLength.smoothness, obj.time.effective_raw]= obj.joystickSmoothness(2,obj.pathLength.scoreD);
+                x= obj.data(2).values;
+                x(isnan(x))=0;
+                y= obj.data(2+1).values;
+                y(isnan(y))=0;
+                obj.pathLength.diff1.x= diff(x,1);
+                obj.pathLength.diff1.y= diff(y,1);
+                obj.pathLength.diff2.x= diff(x,2);
+                obj.pathLength.diff2.y= diff(y,2);
+                obj.pathLength.diff3.x= diff(x,3);
+                obj.pathLength.diff3.y= diff(y,3);
+                
                 if  obj.filtered
                     if( ~isprop(obj,'filteredPathLength'))
                         obj.addprop('filteredPathLength');
                     end
-                        
-                        if obj.datatype == 162
-                            obj.filteredPathLength.dx = [0; obj.data(9).values(2:end)-obj.data(9).values(1:end-1)]; % turn
-                            obj.filteredPathLength.dy = [0; obj.data(10).values(2:end)-obj.data(10).values(1:end-1)]; % speed
-                            obj.filteredPathLength.d = sqrt(obj.pathLength.dx.^2 + obj.pathLength.dy.^2);
-                            obj.filteredPathLength.d(isnan(obj.pathLength.d))=0;
-                            obj.filteredPathLength.cumd = cumsum(obj.pathLength.d);
-                            obj.filteredPathLength.scoreD = obj.pathLength.cumd(end);
-                            obj.filteredPathLength.smoothness = obj.joystickSmoothness(9);
-                        else
-                            obj.filteredPathLength.dx = [0; obj.data(8).values(2:end)-obj.data(8).values(1:end-1)]; % turn
-                            obj.filteredPathLength.dy = [0; obj.data(9).values(2:end)-obj.data(9).values(1:end-1)]; % speed
-                            obj.filteredPathLength.d = sqrt(obj.pathLength.dx.^2 + obj.pathLength.dy.^2);
-                            obj.filteredPathLength.d(isnan(obj.pathLength.d))=0;
-                            obj.filteredPathLength.cumd = cumsum(obj.pathLength.d);
-                            obj.filteredPathLength.scoreD = obj.pathLength.cumd(end);
-                            obj.filteredPathLength.smoothness = obj.joystickSmoothness(8);
-                        end
-                
+                    
+                    if obj.datatype == 162
+                        obj.filteredPathLength.dx = [0; obj.data(9).values(2:end)-obj.data(9).values(1:end-1)]; % turn
+                        obj.filteredPathLength.dy = [0; obj.data(10).values(2:end)-obj.data(10).values(1:end-1)]; % speed
+                        obj.filteredPathLength.d = sqrt(obj.filteredPathLength.dx.^2 + obj.filteredPathLength.dy.^2);
+                        obj.filteredPathLength.d(isnan(obj.filteredPathLength.d))=0;
+                        obj.filteredPathLength.cumd = cumsum(obj.filteredPathLength.d);
+                        obj.filteredPathLength.scoreD = obj.filteredPathLength.cumd(end);
+                        [obj.filteredPathLength.smoothness, obj.time.effective_filtered] = obj.joystickSmoothness(9,obj.filteredPathLength.scoreD);
+                        x= obj.data(9).values;
+                        x(isnan(x))=0;
+                        y= obj.data(9+1).values;
+                        y(isnan(y))=0;
+                        obj.filteredPathLength.diff1.x= diff(x,1);
+                        obj.filteredPathLength.diff1.y= diff(y,1);
+                        obj.filteredPathLength.diff2.x= diff(x,2);
+                        obj.filteredPathLength.diff2.y= diff(y,2);
+                        obj.filteredPathLength.diff3.x= diff(x,3);
+                        obj.filteredPathLength.diff3.y= diff(y,3);
+                    else
+                        obj.filteredPathLength.dx = [0; obj.data(8).values(2:end)-obj.data(8).values(1:end-1)]; % turn
+                        obj.filteredPathLength.dy = [0; obj.data(9).values(2:end)-obj.data(9).values(1:end-1)]; % speed
+                        obj.filteredPathLength.d = sqrt(obj.filteredPathLength.dx.^2 + obj.filteredPathLength.dy.^2);
+                        obj.filteredPathLength.d(isnan(obj.filteredPathLength.d))=0;
+                        obj.filteredPathLength.cumd = cumsum(obj.filteredPathLength.d);
+                        obj.filteredPathLength.scoreD = obj.filteredPathLength.cumd(end);
+                        [obj.filteredPathLength.smoothness, obj.time.effective_filtered] = obj.joystickSmoothness(8,obj.filteredPathLength.scoreD);
+                        x= obj.data(8).values;
+                        x(isnan(x))=0;
+                        y= obj.data(8+1).values;
+                        y(isnan(y))=0;
+                        obj.filteredPathLength.diff1.x= diff(x,1);
+                        obj.filteredPathLength.diff1.y= diff(y,1);
+                        obj.filteredPathLength.diff2.x= diff(x,2);
+                        obj.filteredPathLength.diff2.y= diff(y,2);
+                        obj.filteredPathLength.diff3.x= diff(x,3);
+                        obj.filteredPathLength.diff3.y= diff(y,3);
+                    end
+                    
                 end
             end
         end
-        function NJS_e = joystickSmoothness(obj,startIndex)
+        function [NJS_e, t] = joystickSmoothness(obj,startIndex,scoreD)
             x= obj.data(startIndex).values;
             x(isnan(x))=0;
             y= obj.data(startIndex+1).values;
             y(isnan(y))=0;
-            t = size(obj.data(startIndex).values,1)*0.020;   
+            t = sum(~isnan(obj.data(startIndex).values(obj.data(startIndex).values ~=0)))*0.020;
             po_e=(diff(x,3)).^2+(diff(y,3)).^2;
-            NJS_e=(0.5*sum(po_e)*(t^5)/(obj.pathLength.scoreD^2)).^0.5;
-            clear x  y t
+            NJS_e=(0.5*sum(po_e)*(t^5)/(scoreD^2)).^0.5;
+            clear x  y
         end
     end
     
