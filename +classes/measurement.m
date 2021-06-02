@@ -665,6 +665,26 @@ classdef measurement < dynamicprops
             eval([genName '= i.data(' num2str(j) ').values ;']);
             assignin('base',genName,i.data(j).values);
         end
+        if sum(i.datatype == (161:163))>0
+            if isprop(i,'filterSetting')
+                nameSensor= strcat( nameCell, '.filterSetting');
+                genName = matlab.lang.makeValidName(nameSensor);
+                 eval([genName '= i.filterSetting;']);
+                assignin('base',genName,i.filterSetting);
+            end
+            if isprop(i,'filteredPathLength')
+                 nameSensor= strcat( nameCell, '.filteredPathLength');
+                genName = matlab.lang.makeValidName(nameSensor);
+                 eval([genName '= i.filteredPathLength;']);
+                assignin('base',genName,i.filteredPathLength);
+            end
+            if isprop(i,'pathLength')
+                nameSensor= strcat( nameCell, '.pathLength');
+                genName = matlab.lang.makeValidName(nameSensor);
+                 eval([genName '= i.pathLength;']);
+                assignin('base',genName,i.pathLength);
+            end
+        end
         %'ID',string(obj.id),'.',
     end
     time = (seconds((1:size(obj.instruments(1).data(1).values,1))*0.020) + obj.start_time)';
