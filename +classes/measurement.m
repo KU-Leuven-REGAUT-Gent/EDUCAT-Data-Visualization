@@ -475,7 +475,7 @@ classdef measurement < dynamicprops
                     
             disp(newline + "  ------ Total time -----");
             disp("    Extraction time: " + totalExtrationTime + " s");
-            disp("    processing time: " + totalProcessingTime + " s");
+            disp("    Processing time: " + totalProcessingTime + " s");
         end
         
         %% processing
@@ -503,7 +503,7 @@ classdef measurement < dynamicprops
                 error("No 0x80 at the end");
             end
             processingTime = toc;
-            disp("  - processing time: " + processingTime + " s");
+            disp("  - Processing time: " + processingTime + " s");
             
             obj.dataset_list = [];
             clear dataset shiftedData

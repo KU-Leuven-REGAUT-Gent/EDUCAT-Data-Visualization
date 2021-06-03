@@ -40,9 +40,9 @@ classdef instrument < dynamicprops
                     obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
-                    obj.data(5) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(6) = classes.data("bouts","bouts/measurement","boolean",1);
-                    obj.data(7) = classes.data("operating time","s","float_64",1);
+                    obj.data(5) = classes.data("Operated","bit","boolean",maxCycleCount);
+                    obj.data(6) = classes.data("Bouts","bouts/measurement","boolean",1);
+                    obj.data(7) = classes.data("Operating time","s","float_64",1);
                 case 162 % A2 JOYSTICK_PG_OUTPUT
                     obj.length = 6;
                     obj.data = classes.data.empty(0,obj.length);
@@ -51,9 +51,9 @@ classdef instrument < dynamicprops
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
                     obj.data(5) = classes.data("Mode","number","int_8",maxCycleCount);
-                    obj.data(6) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(7) = classes.data("bouts","bouts/measurement","boolean",1);
-                    obj.data(8) = classes.data("operating time","s","float_64",1);
+                    obj.data(6) = classes.data("Operated","bit","boolean",maxCycleCount);
+                    obj.data(7) = classes.data("Bouts","bouts/measurement","boolean",1);
+                    obj.data(8) = classes.data("Operating time","s","float_64",1);
                 case 163 % A3 JOYSTICK_LINX_OUTPUT
                     obj.length = 5;
                     obj.data = classes.data.empty(0,obj.length);
@@ -61,9 +61,9 @@ classdef instrument < dynamicprops
                     obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
                     obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
                     obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
-                    obj.data(5) = classes.data("operated","bit","boolean",maxCycleCount);
-                    obj.data(6) = classes.data("bouts","bouts/measurement","boolean",1);
-                    obj.data(7) = classes.data("operating time","s","float_64",1);
+                    obj.data(5) = classes.data("Operated","bit","boolean",maxCycleCount);
+                    obj.data(6) = classes.data("Bouts","bouts/measurement","boolean",1);
+                    obj.data(7) = classes.data("Operating time","s","float_64",1);
                 case 177 % B1 IMU_9AXIS_ROT_VEC
                     obj.length = 26;
                     obj.data = classes.data.empty(0,obj.length);
@@ -96,7 +96,7 @@ classdef instrument < dynamicprops
                     obj.data(2) = classes.data("latitude","degrees","float_32",maxCycleCount);
                     obj.data(3) = classes.data("hMSL","m","float_32",maxCycleCount);
                     obj.data(4) = classes.data("speed","m/s","float_32",maxCycleCount);
-                    obj.data(5) = classes.data("reception","-","int_8",maxCycleCount);
+                    obj.data(5) = classes.data("Reception","-","int_8",maxCycleCount);
                 case 194 % C2 GPS_STATUS
                     error("Datatype unsupported - not yet implemented");
                 case 195 % C3 GPS_DATA_STATUS
@@ -467,9 +467,9 @@ classdef instrument < dynamicprops
                     turn = obj.data(2).values(filter);
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
-                    obj.data(10) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(12) = classes.data("filt. operating time","s","float_64",1);
+                    obj.data(10) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
+                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
+                    obj.data(12) = classes.data("Filt. operating time","s","float_64",1);
                     % filtering Turn and speed
                     obj.data(8) = obj.data(8).filteredData(cycle, turn);
                     obj.data(9) = obj.data(9).filteredData(cycle, speed);
@@ -514,9 +514,9 @@ classdef instrument < dynamicprops
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
                     
-                    obj.data(11) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(12) = classes.data("filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(13) = classes.data("filt. operating time","s","float_64",1);
+                    obj.data(11) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
+                    obj.data(12) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
+                    obj.data(13) = classes.data("Filt. operating time","s","float_64",1);
                     % filtering Turn and speed
                     obj.data(9) = obj.data(9).filteredData(cycle, turn);
                     obj.data(10) = obj.data(10).filteredData(cycle, speed);
@@ -564,9 +564,9 @@ classdef instrument < dynamicprops
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
                     
-                    obj.data(10) = classes.data("filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(12) = classes.data("filt. operating time","s","float_64",1);
+                    obj.data(10) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
+                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
+                    obj.data(12) = classes.data("Filt. operating time","s","float_64",1);
                     % filtering Turn and speed
                     obj.data(8) = obj.data(8).filteredData(cycle, turn);
                     obj.data(9) = obj.data(9).filteredData(cycle, speed);
@@ -576,7 +576,7 @@ classdef instrument < dynamicprops
                     obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
                 otherwise
-                    warning("not yet programmed");
+                    warning("Not yet programmed");
             end
             obj.filtered = true;
         end
@@ -639,7 +639,7 @@ classdef instrument < dynamicprops
                     obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
-                        ' - measurement ID: ' num2str(measureID) ' - '];
+                        ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize);
                     catch
@@ -688,7 +688,7 @@ classdef instrument < dynamicprops
                     obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
-                        ' - measurement ID: ' num2str(measureID) ' - '];
+                        ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize);
                     catch
@@ -714,7 +714,7 @@ classdef instrument < dynamicprops
                         obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
-                            ' - measurement ID: ' num2str(measureID) ' - '];
+                            ' - Measurement ID: ' num2str(measureID) ' - '];
                         try
                             sgtitle(Title,'fontsize',fontSize);
                         catch
@@ -736,7 +736,7 @@ classdef instrument < dynamicprops
                     obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title =[obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize+2);
                     catch
@@ -786,7 +786,7 @@ classdef instrument < dynamicprops
                     obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
-                        ' - measurement ID: ' num2str(measureID) ' - '];
+                        ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize);
                     catch
@@ -812,7 +812,7 @@ classdef instrument < dynamicprops
                         obj.data(10).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
-                            ' - measurement ID: ' num2str(measureID) ' - '];
+                            ' - Measurement ID: ' num2str(measureID) ' - '];
                         try
                             sgtitle(Title,'fontsize',fontSize);
                         catch
@@ -832,7 +832,7 @@ classdef instrument < dynamicprops
                     obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize+2);
                     catch
@@ -882,7 +882,7 @@ classdef instrument < dynamicprops
                     obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
-                        ' - measurement ID: ' num2str(measureID) ' - '];
+                        ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize);
                     catch
@@ -908,7 +908,7 @@ classdef instrument < dynamicprops
                         obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
-                            ' - measurement ID: ' num2str(measureID) ' - '];
+                            ' - Measurement ID: ' num2str(measureID) ' - '];
                         try
                             sgtitle(Title,'fontsize',fontSize);
                         catch
@@ -928,7 +928,7 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize+2);
                     catch
@@ -948,7 +948,7 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize+2);
                     catch
@@ -968,7 +968,7 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize+2);
                     catch
@@ -1001,7 +1001,7 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
-                        'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                        'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                     try
                         sgtitle(Title,'fontsize',fontSize+2);
                     catch
@@ -1026,7 +1026,7 @@ classdef instrument < dynamicprops
                         obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
                             datestr(datetime(startTime), ...
-                            'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                            'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                         try
                             sgtitle(Title,'fontsize',fontSize+2);
                         catch
@@ -1046,7 +1046,7 @@ classdef instrument < dynamicprops
                         linkaxes(subplotArray,'x');
                         Title = [obj.name newline  '- ' ...
                             datestr(datetime(startTime), ...
-                            'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                            'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                         try
                             sgtitle(Title,'fontsize',fontSize+2);
                         catch
@@ -1067,7 +1067,7 @@ classdef instrument < dynamicprops
                             plot(obj.data(1).values, obj.data(2).values,'+');
                             Title = [obj.name newline  '- ' ...
                                 datestr(datetime(startTime), ...
-                                'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                                'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
                             try
                                 sgtitle(Title,'fontsize',fontSize+2);
                             catch
@@ -1221,7 +1221,7 @@ classdef instrument < dynamicprops
             
             Title = [obj.name newline  '- ' ...
                 datestr(datetime(startTime), ...
-                'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '];
+                'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
             if obj.datatype ~= 161 && obj.datatype  ~= 162 && obj.datatype  ~= 163 && obj.datatype  ~= 242
                 try
                     sgtitle(Title,'fontsize',fontSize+2);
@@ -1246,7 +1246,7 @@ classdef instrument < dynamicprops
                 xlim(([min(time) (max(time))]));
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
-                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
+                    'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Instantaneous joystick path length [RAW]' ];
                 
                 title(Title,'fontsize',20);
@@ -1279,7 +1279,7 @@ classdef instrument < dynamicprops
                 %                 ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
-                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
+                    'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Cumulative joystick path length (CJPL) [RAW]' ];
                 
                 title(Title,'fontsize',20);
@@ -1297,43 +1297,43 @@ classdef instrument < dynamicprops
                 
                 subplotArray(1) = subplot(3,2,1);
                 plot(obj.pathLength.diff1.x,'LineWidth',2 )
-                %                 xlim(([min(time) (max(time))]));
-                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlim(([1 numel(obj.pathLength.diff1.x)]));
+                xlabel('Samples','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
-                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
+                    'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'X diff 1' ];
                 title(Title,'fontsize',20);
                 
                 subplotArray(2) = subplot(3,2,2);
                 plot(obj.pathLength.diff1.y,'LineWidth',2 )
-                %                 xlim(([min(time) (max(time))]));
-                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlim(([1 numel(obj.pathLength.diff1.y)]));
+                xlabel('Samples','fontsize',20);
                 title('Y diff 1','fontsize',fontSize)
                 
                 % 2th diff
                 subplotArray(3) = subplot(3,2,3);
                 plot(obj.pathLength.diff2.x,'LineWidth',2 )
-                %                 xlim(([min(time) (max(time))]));
-                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlim(([1 numel(obj.pathLength.diff2.x)]));
+                xlabel('Samples','fontsize',20);
                 title('X diff 2','fontsize',fontSize)
                 
                 subplotArray(4) = subplot(3,2,4);
                 plot(obj.pathLength.diff2.y,'LineWidth',2 )
-                %                 xlim(([min(time) (max(time))]));
-                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlim(([1 numel(obj.pathLength.diff2.y)]));
+                xlabel('Samples','fontsize',20);
                 title('Y diff 2','fontsize',fontSize)
                 
                 % 3th diff
                 subplotArray(5) = subplot(3,2,5);
                 plot(obj.pathLength.diff3.x,'LineWidth',2 )
-                %                 xlim(([min(time) (max(time))]));
-                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlim(([1 numel(obj.pathLength.diff3.x)]));
+                xlabel('Samples','fontsize',20);
                 title('X diff 3','fontsize',fontSize)
                 
                 subplotArray(6) = subplot(3,2,6);
                 plot(obj.pathLength.diff3.y,'LineWidth',2 )
-                %                 xlim(([min(time) (max(time))]));
-                %                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlim(([1 numel(obj.pathLength.diff3.y)]));
+                xlabel('Samples','fontsize',20);
                 title('Y diff 3','fontsize',fontSize)
                 linkaxes(subplotArray,'x');
                 subplotArray=[];
@@ -1355,7 +1355,7 @@ classdef instrument < dynamicprops
                 xlim(([min(time) (max(time))]));
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
-                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
+                    'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Filtered Instantaneous joystick path length' ];
                 
                 title(Title,'fontsize',20);
@@ -1389,8 +1389,8 @@ classdef instrument < dynamicprops
                 %                 ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 Title = [datestr(datetime(startTime), ...
-                    'dd/mm/yyyy') ' - measurement ID: ' num2str(measureID) ' - '  newline ....
-                    'Filtered cumulative joystick path length (CJPL)' ];
+                    'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
+                    'Filtered Cumulative Joystick Path Length (CJPL)' ];
                 
                 title(Title,'fontsize',20);
                 display( "Filtered CJPL score: " + round(obj.filteredPathLength.scoreD));
@@ -1423,9 +1423,9 @@ classdef instrument < dynamicprops
             h = heatmap(clusteredTurn,clusteredSpeed,cData);
             h.ColorLimits = [0 100];
             if dataFiltered
-                h.Title = string(size)+ "x" + string(size) + " filtered joystick deflection Heat Map";
+                h.Title = string(size)+ "x" + string(size) + " filtered Joystick Deflection Heat Map";
             else
-                h.Title = string(size)+ "x" + string(size) + " RAW joystick deflection Heat Map";
+                h.Title = string(size)+ "x" + string(size) + " RAW Joystick Deflection Heat Map";
             end
             if variableScale
                 h.ColorLimits = [0 max(max(cData))];
@@ -1440,7 +1440,7 @@ classdef instrument < dynamicprops
             h.MissingDataLabel = 0;
             h.MissingDataColor = [1 1 1];
             colormap default
-            disp("elapsed time for " + string(size)+ "x" + string(size) + " heatmap: " + toc + "s")
+            disp("Elapsed time for " + string(size)+ "x" + string(size) + " heatmap: " + toc + "s")
             
         end
         
