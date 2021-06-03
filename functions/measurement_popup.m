@@ -1,4 +1,4 @@
-function popup(m)
+function measurement_popup(m)
 fig = uifigure;
 
 % Desired Window width and height
