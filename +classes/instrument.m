@@ -455,9 +455,9 @@ classdef instrument < dynamicprops
                         end
                         obj.filterSetting.deadZone = deadZone;
                         if FilterUnit % percentage
-                             obj.filterSetting.unit = "%";
+                            obj.filterSetting.unit = "%";
                         else % value
-                             obj.filterSetting.unit = "bit(s)";
+                            obj.filterSetting.unit = "bit(s)";
                         end
                     else
                         obj.filtered = false;
@@ -501,7 +501,7 @@ classdef instrument < dynamicprops
                         end
                         obj.filterSetting.deadZone = deadzone;
                         if FilterUnit % percentage
-                             obj.filterSetting.unit = "%";
+                            obj.filterSetting.unit = "%";
                         else % value
                             obj.filterSetting.unit = "bit(s)";
                         end
@@ -550,9 +550,9 @@ classdef instrument < dynamicprops
                         end
                         obj.filterSetting.deadZone = deadzone;
                         if FilterUnit % percentage
-                             obj.filterSetting.unit = "%";
+                            obj.filterSetting.unit = "%";
                         else % value
-                             obj.filterSetting.unit = "bit(s)";
+                            obj.filterSetting.unit = "bit(s)";
                         end
                         
                     else
@@ -1479,7 +1479,6 @@ classdef instrument < dynamicprops
                 if( ~isprop(obj,'time'))
                     obj.addprop('time');
                 end
-                obj.time.measurement = numel(obj.data(2).values)*0.02;
                 
                 obj.pathLength.dx = [0; obj.data(2).values(2:end)-obj.data(2).values(1:end-1)]; % turn
                 obj.pathLength.dy = [0; obj.data(3).values(2:end)-obj.data(3).values(1:end-1)]; % speed
