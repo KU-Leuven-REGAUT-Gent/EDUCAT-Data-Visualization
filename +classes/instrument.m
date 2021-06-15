@@ -1230,7 +1230,83 @@ classdef instrument < dynamicprops
                 end
             end
             
-            % --------------------- Joystick path length ----------------------------
+        plotJoystick(obj,measureID,startTime,showJoystickPath)
+            
+        end
+        
+        %%  Local plot functions
+        
+        function Heatmp(~,turn,speed,R,size,variableScale,dataFiltered,fontSize)
+            
+            tic
+            XgridEdges = -R:(R*2)/size:R;
+            YgridEdges =-R:(R*2)/size:R;
+            
+            
+            cData = histcounts2(turn,speed,XgridEdges,YgridEdges);
+            cData(cData == 0) =nan;
+            cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
+            cData = cData/length(turn)*100; %
+            limit = R-(R/size);
+            clusteredSpeed = round(linspace(limit,-limit,size),2);
+            clusteredTurn = round(linspace(-limit,limit,size),2);
+            % create heatmap
+            figure;
+            set(gca,'fontsize',20) % set fontsize of the plot to 20
+            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+            set(0, 'DefaultAxesFontSize', 20);
+            h = heatmap(clusteredTurn,clusteredSpeed,cData);
+            h.ColorLimits = [0 100];
+            if dataFiltered
+                h.Title = string(size)+ "x" + string(size) + " filtered Joystick Deflection Heat Map";
+            else
+                h.Title = string(size)+ "x" + string(size) + " RAW Joystick Deflection Heat Map";
+            end
+            if variableScale
+                h.ColorLimits = [0 max(max(cData))];
+            else
+                h.ColorLimits = [0 100];
+            end
+            h.CellLabelFormat = '%.2f';
+            h.ColorMethod = 'none';
+            h.XLabel = 'turn';
+            h.YLabel = 'speed';
+            h.FontSize = fontSize;
+            h.MissingDataLabel = 0;
+            h.MissingDataColor = [1 1 1];
+            colormap default
+            disp("Elapsed time for " + string(size)+ "x" + string(size) + " heatmap: " + toc + "s")
+            
+        end
+        
+        function DeflectionsPattern(obj,xDataNr,yDataNr,fontSize,plotDownSample,downSampleFactor)
+            figure()
+            set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+            set(0, 'DefaultAxesFontSize', fontSize);
+            try
+                sgtitle('Joystick Deflection Pattern','fontsize',fontSize+2);
+            catch
+                suptitle('Joystick Deflection Pattern');
+            end
+            if plotDownSample
+                factor = size(obj.data(xDataNr).values,1)/downSampleFactor;
+                plt(obj.data(xDataNr).values, obj.data(yDataNr).values,'+','downsample',factor);
+            else
+                plot(obj.data(xDataNr).values, obj.data(yDataNr).values,'+');
+            end
+            axis equal;
+            limValue = max(abs([obj.data(xDataNr).values; obj.data(yDataNr).values]))*1.1;
+            if( limValue >0)
+                axis ([-limValue limValue -limValue limValue]);
+            end
+            xlabel(obj.data(xDataNr).name);
+            ylabel(obj.data(yDataNr).name);
+        end
+        
+        function plotJoystick(obj,measureID,startTime,showJoystickPath)
+            
+                % --------------------- Joystick path length ----------------------------
             if( isprop(obj,'pathLength'))
                 fontSize = 20;
                 time = seconds(0:(size(obj.pathLength.d,1)-1))*0.020 + startTime;
@@ -1399,75 +1475,6 @@ classdef instrument < dynamicprops
             
         end
         
-        %%  Local plot functions
-        
-        function Heatmp(~,turn,speed,R,size,variableScale,dataFiltered,fontSize)
-            
-            tic
-            XgridEdges = -R:(R*2)/size:R;
-            YgridEdges =-R:(R*2)/size:R;
-            
-            
-            cData = histcounts2(turn,speed,XgridEdges,YgridEdges);
-            cData(cData == 0) =nan;
-            cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
-            cData = cData/length(turn)*100; %
-            limit = R-(R/size);
-            clusteredSpeed = round(linspace(limit,-limit,size),2);
-            clusteredTurn = round(linspace(-limit,limit,size),2);
-            % create heatmap
-            figure;
-            set(gca,'fontsize',20) % set fontsize of the plot to 20
-            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-            set(0, 'DefaultAxesFontSize', 20);
-            h = heatmap(clusteredTurn,clusteredSpeed,cData);
-            h.ColorLimits = [0 100];
-            if dataFiltered
-                h.Title = string(size)+ "x" + string(size) + " filtered Joystick Deflection Heat Map";
-            else
-                h.Title = string(size)+ "x" + string(size) + " RAW Joystick Deflection Heat Map";
-            end
-            if variableScale
-                h.ColorLimits = [0 max(max(cData))];
-            else
-                h.ColorLimits = [0 100];
-            end
-            h.CellLabelFormat = '%.2f';
-            h.ColorMethod = 'none';
-            h.XLabel = 'turn';
-            h.YLabel = 'speed';
-            h.FontSize = fontSize;
-            h.MissingDataLabel = 0;
-            h.MissingDataColor = [1 1 1];
-            colormap default
-            disp("Elapsed time for " + string(size)+ "x" + string(size) + " heatmap: " + toc + "s")
-            
-        end
-        
-        function DeflectionsPattern(obj,xDataNr,yDataNr,fontSize,plotDownSample,downSampleFactor)
-            figure()
-            set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
-            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-            set(0, 'DefaultAxesFontSize', fontSize);
-            try
-                sgtitle('Joystick Deflection Pattern','fontsize',fontSize+2);
-            catch
-                suptitle('Joystick Deflection Pattern');
-            end
-            if plotDownSample
-                factor = size(obj.data(xDataNr).values,1)/downSampleFactor;
-                plt(obj.data(xDataNr).values, obj.data(yDataNr).values,'+','downsample',factor);
-            else
-                plot(obj.data(xDataNr).values, obj.data(yDataNr).values,'+');
-            end
-            axis equal;
-            limValue = max(abs([obj.data(xDataNr).values; obj.data(yDataNr).values]))*1.1;
-            if( limValue >0)
-                axis ([-limValue limValue -limValue limValue]);
-            end
-            xlabel(obj.data(xDataNr).name);
-            ylabel(obj.data(yDataNr).name);
-        end
         %%  Joystick functions
         function obj  = joystickPathLength(obj)
             if sum(obj.datatype == (161:163))
