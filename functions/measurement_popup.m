@@ -6,7 +6,7 @@ GuiWidth = 400;
 GuiHeight = 250;
 
 % Find Screen Resolution
-temp = figposition([0,0,100,100]);
+temp =get(0,'screensize');
 ScreenWidth = temp(3);
 ScreenHeight = temp(4);
 
