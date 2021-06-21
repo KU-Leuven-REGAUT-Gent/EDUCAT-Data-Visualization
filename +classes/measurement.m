@@ -545,6 +545,14 @@ classdef measurement < dynamicprops
             if mod(startDiff,0.02) > 1.4225e-16
                 startTimeConv =  startTimeConv + seconds(0.02-mod(startDiff,0.02));
             end
+            % cutting start time is earlier than the start time of the
+            % measurement
+            if startDiff < 0 
+                warning off backtrace;
+                warning(['The start time of the cutting must be further in time than the start time of the measurement (' , datestr(datetime(obj.start_time)),')', newline, 'Rerun this section again or pull/load the measurement again in section 1 in the case that the measurement was already cut in time.'] )
+                warning on backtrace;
+                return
+            end
             % ----- end time check --------
             % check if date is correct
             trials = 0;
@@ -579,7 +587,13 @@ classdef measurement < dynamicprops
                 
                 endCycle= round(time2num(endTimeConv  - obj.start_time,"seconds")/0.02)+1;
                 
+            elseif time2num(obj.end_time - endTimeConv,"seconds") ==0
+                endTimeConv = obj.end_time;
+                endCycle = numel(obj.instruments(1).data(1).values);
             else
+                warning off backtrace;
+                warning('the end time of the cutting was further than the end time of the measurement. The end time of the measurement is used instead of the end time of the cutting');
+                warning on backtrace;
                 endTimeConv = obj.end_time;
                 endCycle = numel(obj.instruments(1).data(1).values);
             end
