@@ -208,8 +208,8 @@ classdef measurement < dynamicprops
             % Set Start and end time and the cycle counters
             if contains(date,"full",'IgnoreCase',true) || date==""  || isempty(date)
                 obj.start_time = datetime(measurement_info.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
-                obj.end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
-                
+                obj.record_end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
+                 obj.end_time = obj.start_time + seconds(double(obj.max_cycleCount-1)*0.02);
                 if  obj.max_cycleCount == -2147483648
                     diff = obj.end_time - obj.start_time;
                     pulled_cycleCounts = seconds(diff)/0.02;
@@ -281,10 +281,11 @@ classdef measurement < dynamicprops
                 end
                 pulled_cycleCounts =  int64(obj.end_cycleCount)-obj.start_cycleCount+1;
                 obj.end_time = obj.start_time + seconds(double(pulled_cycleCounts)*0.02);
+                obj.record_end_time = obj.end_time;
             end
             
             obj.record_start_time = obj.start_time;
-            obj.record_end_time = obj.end_time;
+            
             obj.record_duration = obj.record_end_time - obj.record_start_time;
             obj.measurement_duration = obj.record_end_time - obj.record_start_time;
             % Selecting setup
