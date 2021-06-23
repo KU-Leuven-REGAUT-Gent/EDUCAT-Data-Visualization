@@ -580,7 +580,7 @@ classdef measurement < dynamicprops
             % end time of measurement to the next sample if start
             % time is not a multiple of 0.02
             endDiff =time2num(endTimeConv - obj.start_time,"seconds");
-            if   time2num(obj.end_time - endTimeConv,"seconds") >0
+            if   time2num(obj.end_time - (endTimeConv +  seconds(0.02-mod(endDiff,0.02))),"seconds") >0
                 if mod(endDiff,0.02) ~= 0
                     endTimeConv =  endTimeConv + seconds(0.02-mod(endDiff,0.02));
                 end
