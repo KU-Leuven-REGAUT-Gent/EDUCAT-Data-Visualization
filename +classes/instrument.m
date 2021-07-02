@@ -1553,10 +1553,10 @@ classdef instrument < dynamicprops
         end
         function [NJS_e, t] = joystickSmoothness(obj,startIndex,scoreD)
             x= obj.data(startIndex).values;
-            x(isnan(x))=0;
+            x(isnan(x))=[];
             y= obj.data(startIndex+1).values;
-            y(isnan(y))=0;
-            t = sum(~isnan(obj.data(startIndex).values(obj.data(startIndex).values ~=0)))*0.020;
+            y(isnan(y))=[];
+            t = sum(~isnan(obj.data(startIndex).values))*0.020;
             po_e=(diff(x,3)).^2+(diff(y,3)).^2;
             NJS_e=(0.5*sum(po_e)*(t^5)/(scoreD^2)).^0.5;
             clear x  y

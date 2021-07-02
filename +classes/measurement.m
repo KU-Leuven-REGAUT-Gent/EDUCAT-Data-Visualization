@@ -211,8 +211,8 @@ classdef measurement < dynamicprops
                 obj.record_end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
                  obj.end_time = obj.start_time + seconds(double(obj.max_cycleCount-1)*0.02);
                 if  obj.max_cycleCount == -2147483648
-                    diff = obj.end_time - obj.start_time;
-                    pulled_cycleCounts = seconds(diff)/0.02;
+                    timeDiff = obj.end_time - obj.start_time;
+                    pulled_cycleCounts = seconds(timeDiff)/0.02;
                     obj.end_cycleCount = pulled_cycleCounts;
                 else
                     pulled_cycleCounts = int64(obj.max_cycleCount);
@@ -248,24 +248,23 @@ classdef measurement < dynamicprops
                 dateConverted = strjoin(dateArray(1:end-1),"");
                 
                 % set start time
-                startMeasurement = datetime(measurement_info.start_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
-                endMeasurement = datetime(measurement_info.end_time,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
+                startMeasurement = datetime(measurement_info.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
+                endMeasurement = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
                 dateNumConverted=datenum(dateConverted,'dd-mm-yyyy HH:MM:SS.FFF');
                 if (dateNumConverted-datenum(startMeasurement))<0 && (dateNumConverted-datenum(endMeasurement))>0
                     obj.start_time = startMeasurement;
                 else
-                    obj.start_time = datetime(dateConverted,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS');
+                    obj.start_time = datetime(dateConverted,'InputFormat','dd-MM-yyyy HH:mm:ss.SSS', 'Format', 'dd-MM-yyyy HH:mm:ss.SSS','TimeZone','local');
                 end
-                % Set start time and start and end cyclecount
-                dateNr = posixtime(obj.start_time);
+                
                 % set cycle counters
-                obj.start_cycleCount = ceil((dateNr*1000 - measurement_info.start_time)/1000/0.02);
+                obj.start_cycleCount = max([ceil(seconds(diff([startMeasurement, obj.start_time]))/0.02) 1]);
                 if obj.start_cycleCount < 0
                     error("out of range");
                 end
                 
                 trials =0;
-                while isempty(dur) || dur <=0
+                while sum(dur) <=0
                     if trials==3
                         exit
                     end
@@ -275,7 +274,8 @@ classdef measurement < dynamicprops
                     dur = input('enter a duration > 0: ');
                     trials = trials+1;
                 end
-                obj.end_cycleCount = floor((dateNr*1000 + ceil(dur*60*60*1000) - measurement_info.start_time)/1000/0.02);
+                 dur = dur(1)*60*60 + dur(2)*60 + dur(3); % conversion array to seconds
+                 obj.end_cycleCount =  obj.start_cycleCount +floor( dur/0.02)-1;
                 if obj.end_cycleCount > obj.max_cycleCount
                     obj.end_cycleCount = int64(obj.max_cycleCount);
                 end
@@ -446,7 +446,7 @@ classdef measurement < dynamicprops
                     end
                     % store missing cycles per instruments
                     cycleSequence = obj.start_cycleCount:1:obj.end_cycleCount;
-                    missingCycles(i,1) = {setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)')};
+                    missingCycles{i,1} = setdiff(cycleSequence,int64(obj.dataset_list.cyclecounter)');
                     
                     
                     
@@ -461,7 +461,7 @@ classdef measurement < dynamicprops
                 if isequal(missingCycles{1},missingCycles{:})
                     warning off backtrace;
                     warning("All instruments miss following cycle counters: (first 25 are shown)\n%s %s", ...
-                        join(string(missingCycles{1}(1:min([25 size(missingCycles{1},2)]))),", "));
+                         join(string(missingCycles{1}(1:min([25 size(missingCycles{1},2)]))),", "));
                     warning on backtrace;
                 else
                     for i= 1: obj.n_instruments
