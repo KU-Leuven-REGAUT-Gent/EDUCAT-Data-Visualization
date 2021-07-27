@@ -109,6 +109,9 @@ classdef data
             time = seconds(0:(size(obj.values,1)-1))*0.020 + startTime;
              if plotDownSample
                 factor = size(obj.values,1)/downSampleFactor;
+                warning off backtrace;
+                warning("Disabled at this moment");
+                warning on backtrace;
                 plt(time,obj.values,'LineWidth',2,'downsample',factor);
             else
                 plot(time,obj.values,'LineWidth',2);

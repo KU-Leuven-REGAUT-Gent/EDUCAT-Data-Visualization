@@ -65,7 +65,7 @@ classdef measurement < dynamicprops
             obj.enableStoreMemory = false;
         end
         
-        function obj = connect(obj,sort,direction)
+        function obj = connect(obj,useLocal,localUrl,sort,direction)
             % Start a connection with the EDUCAT database on the Myriade
             % server.
             %
@@ -110,7 +110,13 @@ classdef measurement < dynamicprops
             
             jdbcDriver = "com.mysql.cj.jdbc.Driver";
             server = "jdbc:mysql://clouddb.myriade.be:20100/";
+            % local database
             
+                if useLocal
+                    server =  "jdbc:mysql://" + localUrl + ":20100/";
+                    password = input(' EDUCAT DB password: ','s');
+                end
+                
             % TODO: Check for valid connection
             obj.conn = database(databaseName, username, password, jdbcDriver, server);
             
