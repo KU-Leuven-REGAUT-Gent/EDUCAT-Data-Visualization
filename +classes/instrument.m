@@ -654,20 +654,20 @@ classdef instrument < dynamicprops
                     % ------ RAW  ------
                     if showHeatMap(1)
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(2).values,obj.data(3).values,128,standardHeatmap,variableScale,false,fontSize);
+                        obj.Heatmp('',obj.data(2).values,obj.data(3).values,128,standardHeatmap,variableScale,false,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(2).values,obj.data(3).values,128,gridSize,variableScale,false,fontSize);
+                        obj.Heatmp('',obj.data(2).values,obj.data(3).values,128,gridSize,variableScale,false,fontSize);
                     end
                     % ------ Filtered  ------
                     if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,128,gridSize,variableScale,true,fontSize);
                     end
                     
                     % ************** Operate plot **************
@@ -751,21 +751,21 @@ classdef instrument < dynamicprops
                     % ------ RAW  ------
                     if showHeatMap(1)
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(2).values,obj.data(3).values,100,standardHeatmap,variableScale,false,fontSize);
+                        obj.Heatmp('',obj.data(2).values,obj.data(3).values,100,standardHeatmap,variableScale,false,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(2).values,obj.data(3).values,100,gridSize,variableScale,false,fontSize);
+                        obj.Heatmp('',obj.data(2).values,obj.data(3).values,100,gridSize,variableScale,false,fontSize);
                     end
                     
                     % ------ Filtered ------
                     if showHeatMap(2) &&  ~isempty(obj.filtered) && obj.filtered
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(9).values,obj.data(10).values,100,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp('filtered',obj.data(9).values,obj.data(10).values,100,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap --------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(9).values,obj.data(10).values,100,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp('filtered',obj.data(9).values,obj.data(10).values,100,gridSize,variableScale,true,fontSize);
                     end
                     
                     % ************** Operate plot **************
@@ -847,21 +847,21 @@ classdef instrument < dynamicprops
                     % ------ RAW  ------
                     if showHeatMap(1)
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(2).values,obj.data(3).values,128,standardHeatmap,variableScale,false,fontSize);
+                        obj.Heatmp('',obj.data(2).values,obj.data(3).values,128,standardHeatmap,variableScale,false,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(2).values,obj.data(3).values,128,gridSize,variableScale,false,fontSize);
+                        obj.Heatmp('',obj.data(2).values,obj.data(3).values,128,gridSize,variableScale,false,fontSize);
                     end
                     
                     % ------ Filtered ------
                     if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
                         % ------ Standard heatmap ------
-                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp(obj.data(8).values,obj.data(9).values,128,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,128,gridSize,variableScale,true,fontSize);
                     end
                     
                     % ************** Operate plot **************
@@ -1236,47 +1236,104 @@ classdef instrument < dynamicprops
         
         %%  Local plot functions
         
-        function Heatmp(~,turn,speed,R,size,variableScale,dataFiltered,fontSize)
+        function Heatmp(obj,name,turn,speed,R,size,variableScale,dataFiltered,fontSize)
             
             tic
             XgridEdges = -R:(R*2)/size:R;
             YgridEdges =-R:(R*2)/size:R;
-            
-            
-            cData = histcounts2(turn,speed,XgridEdges,YgridEdges);
-            cData(cData == 0) =nan;
-            cData = rot90(cData); % this is needed because the hitscounts2 rotates the result
-            cData = cData/length(turn)*100; %
+            s=num2str(size);
+            if size > 5
+                hsize = 'Variable';
+            else
+                 hsize = 'Standard';
+            end
+            htmpName = [name 'heatmap' hsize];
+             if( ~isprop(obj, htmpName))
+                    obj.addprop(htmpName);
+             end
+              
+            obj.(htmpName).bin = histcounts2(turn,speed,XgridEdges,YgridEdges);
+            table(  obj.(htmpName).bin)
+            obj.(htmpName).bin(obj.(htmpName).bin == 0) =nan;
+            obj.(htmpName).bin = rot90(obj.(htmpName).bin); % this is needed because the hitscounts2 rotates the result
+            obj.(htmpName).bin = obj.(htmpName).bin/length(turn)*100; %
             limit = R-(R/size);
-            clusteredSpeed = round(linspace(limit,-limit,size),2);
-            clusteredTurn = round(linspace(-limit,limit,size),2);
+            obj.(htmpName).speedAxis = round(linspace(limit,-limit,size),2);
+            obj.(htmpName).turnAxis = round(linspace(-limit,limit,size),2);
             % create heatmap
             figure;
             set(gca,'fontsize',20) % set fontsize of the plot to 20
             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
             set(0, 'DefaultAxesFontSize', 20);
-            h = heatmap(clusteredTurn,clusteredSpeed,cData);
-            h.ColorLimits = [0 100];
+            
+              
+            htmp = heatmap(obj.(htmpName).turnAxis,obj.(htmpName).speedAxis,obj.(htmpName).bin);
+           
+                
+            
+           htmp.ColorLimits = [0 100];
             if dataFiltered
-                h.Title = string(size)+ "x" + string(size) + " filtered Joystick Deflection Heat Map";
+                htmp.Title = s+ "x" + s + " filtered Joystick Deflection Heat Map";
             else
-                h.Title = string(size)+ "x" + string(size) + " RAW Joystick Deflection Heat Map";
+                htmp.Title = s+ "x" + s + " RAW Joystick Deflection Heat Map";
             end
             if variableScale
-                h.ColorLimits = [0 max(max(cData))];
+                htmp.ColorLimits = [0 max(max(obj.(htmpName).bin))];
             else
-                h.ColorLimits = [0 100];
+               htmp.ColorLimits = [0 100];
             end
-            h.CellLabelFormat = '%.2f';
-            h.ColorMethod = 'none';
-            h.XLabel = 'turn';
-            h.YLabel = 'speed';
-            h.FontSize = fontSize;
-            h.MissingDataLabel = 0;
-            h.MissingDataColor = [1 1 1];
+            htmp.CellLabelFormat = '%.2f';
+            htmp.ColorMethod = 'none';
+            htmp.XLabel = 'turn';
+            htmp.YLabel = 'speed';
+            htmp.FontSize = fontSize;
+            htmp.MissingDataLabel = 0;
+            htmp.MissingDataColor = [1 1 1];
             colormap default
-            disp("Elapsed time for " + string(size)+ "x" + string(size) + " heatmap: " + toc + "s")
+            disp("Elapsed time for " + s+ "x" +s + " heatmap: " + toc + "s")
             
+        end
+        function saveHeatmaps(obj, store)
+            
+            if ~exist([pwd '\heatmaps'], 'dir')
+                mkdir('heatmaps')
+            end
+             % create filename
+            filename = fullfile(pwd,'heatmaps', [store '.xlsx']);
+            
+            i=0;
+            while exist(filename, 'file') == 2
+                i = i+1;
+                filename = fullfile(pwd,'heatmaps', [store '_V' int2str(i)  '.xlsx']);
+            end
+             writematrix("Standard speed axis",filename,'Sheet',"standard",'Range','A2')
+            writematrix(obj.heatmapStandard.speedAxis',filename,'Sheet',"standard",'Range','A3')
+             writematrix("Standard turn axis",filename,'Sheet',"standard",'Range','B1')
+            writematrix(obj.heatmapStandard.turnAxis,filename,'Sheet',"standard",'Range','C1')
+           writematrix(obj.heatmapStandard.bin,filename,'Sheet',"standard",'Range','C3')
+           
+            writematrix("Variable speed axis",filename,'Sheet',"standard",'Range','A15')
+            writematrix(obj.heatmapVariable.speedAxis',filename,'Sheet',"standard",'Range','A16')
+             writematrix("Variable turn axis",filename,'Sheet',"standard",'Range','B14')
+            writematrix(obj.heatmapVariable.turnAxis,filename,'Sheet',"standard",'Range','C14')
+           writematrix(obj.heatmapVariable.bin,filename,'Sheet',"standard",'Range','C16')
+           
+%            Filtered heatmaps
+            if obj.filtered
+                       writematrix("Standard speed axis",filename,'Sheet',"filtered",'Range','A2')    
+                        writematrix(obj.filteredheatmapStandard.speedAxis',filename,'Sheet',"filtered",'Range','A3')
+                         writematrix("standard turn axis",filename,'Sheet',"filtered",'Range','B1')
+                        writematrix(obj.filteredheatmapStandard.turnAxis,filename,'Sheet',"filtered",'Range','C1')
+            %             writematrix("Standard bin",filename,'Sheet',"filtered",'Range','A4')
+                       writematrix(obj.filteredheatmapStandard.bin,filename,'Sheet',"filtered",'Range','C3')
+
+                       writematrix("Variable speed axis",filename,'Sheet',"filtered",'Range','A15')
+                        writematrix(obj.filteredheatmapVariable.speedAxis',filename,'Sheet',"filtered",'Range','A16')
+                        writematrix("Variable turn axis",filename,'Sheet',"filtered",'Range','B14')
+                        writematrix(obj.filteredheatmapVariable.turnAxis,filename,'Sheet',"filtered",'Range','C14')
+            %             writematrix("Variable bin",filename,'Sheet','filtered','Range','A15')
+                       writematrix(obj.filteredheatmapVariable.bin,filename,'Sheet',"filtered",'Range','C16')
+            end
         end
         
         function DeflectionsPattern(obj,xDataNr,yDataNr,fontSize,plotDownSample,downSampleFactor)

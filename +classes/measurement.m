@@ -86,7 +86,7 @@ classdef measurement < dynamicprops
                 if ~exist('jdbc', 'dir')
                     mkdir('jdbc')
                 end
-                error("JDBC MySQL Connector not found, please download the connector from https://dev.mysql.com/downloads/connector/j/ and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory, but directly in the root of the jdbc directory.");
+                error("JDBC MySQL Connector not found, please download the connector from https://downloads.mysql.com/archives/get/p/3/file/mysql-connector-java-8.0.18.zip and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory, but directly in the root of the jdbc directory.");
             end
             
             databaseName = "educat";
@@ -383,7 +383,7 @@ classdef measurement < dynamicprops
         end
         
         %% *********************** Get data ***************************
-        function obj = get_dataset_DB(obj,excludeInstruments,addDistSubs)
+       function obj = get_dataset_DB(obj,excludeInstruments,addDistSubs)
             %Get the dataset from the 'STP_measurement_dataset table'.
             %This contains all the data inside the chosen range
             %MATLAB will get the data in parts of maximum 5000.
