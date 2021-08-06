@@ -1253,7 +1253,8 @@ classdef instrument < dynamicprops
              end
               
             obj.(htmpName).bin = histcounts2(turn,speed,XgridEdges,YgridEdges);
-            table(  obj.(htmpName).bin)
+            
+         
             obj.(htmpName).bin(obj.(htmpName).bin == 0) =nan;
             obj.(htmpName).bin = rot90(obj.(htmpName).bin); % this is needed because the hitscounts2 rotates the result
             obj.(htmpName).bin = obj.(htmpName).bin/length(turn)*100; %
@@ -1265,8 +1266,12 @@ classdef instrument < dynamicprops
             set(gca,'fontsize',20) % set fontsize of the plot to 20
             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
             set(0, 'DefaultAxesFontSize', 20);
-            
-              
+%             Show table
+            T = array2table(obj.(htmpName).bin);
+           T.Properties.VariableNames= string(obj.(htmpName).turnAxis );
+            T.Properties.RowNames = string(obj.(htmpName).speedAxis);
+            T
+%             Show heatmap
             htmp = heatmap(obj.(htmpName).turnAxis,obj.(htmpName).speedAxis,obj.(htmpName).bin);
            
                 
