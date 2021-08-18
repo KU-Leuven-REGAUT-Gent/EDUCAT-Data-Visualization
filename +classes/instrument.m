@@ -21,13 +21,21 @@ classdef instrument < dynamicprops
     end
     methods
         %%  *************** constructor *******************
-        function obj = instrument(id, name, description, datatype,maxCycleCount,addDistSubs)
+     
+        function obj = instrument(varargin)
             %constructor of the instrument
             %Declaration of the ID, name, description and the datatype of
             %the instrument.
             %Creation of the different sensordata object of each
             %instrument.
-            
+            if nargin ==0 
+            else
+                id = varargin{1};
+                name = varargin{2};
+                description = varargin{3};
+                datatype = varargin{4};
+                maxCycleCount = varargin{5};
+                addDistSubs = varargin{6};
             obj.id = id;
             obj.name = name;
             obj.description = description;
@@ -181,11 +189,12 @@ classdef instrument < dynamicprops
                     obj.data(10) = classes.data("Sensor activate bit - Instrument 6","","boolean",maxCycleCount);
                     obj.data(11) = classes.data("Sensor activate bit - Instrument 7","","boolean",maxCycleCount);
                     obj.data(12) = classes.data("Sensor activate bit - Instrument 8","","boolean",maxCycleCount);
+            
                 otherwise
                     error("Datatype unsupported");
             end
         end
-        
+        end
         %%  *************** add data function *******************
         function obj = add_data(obj, cyclecounter_list, blob, addDistSubs)
             % add data to the sensordata object of the instrument
@@ -468,7 +477,7 @@ classdef instrument < dynamicprops
                     speed = obj.data(3).values(filter);
                     cycle = find(filter);
                     obj.data(10) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
+                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","uint_64",1);
                     obj.data(12) = classes.data("Filt. operating time","s","float_64",1);
                     % filtering Turn and speed
                     obj.data(8) = obj.data(8).filteredData(cycle, turn);
@@ -606,8 +615,151 @@ classdef instrument < dynamicprops
                 case 242 % F2
             end
         end
-        
-        
+        %%  *************** Import Trial 1 Instrument *******************
+        function obj = importTrial1Instrument(obj,id, name, description, datatype,maxCycleCount,cyclecounter_list,trialData)
+            obj.id = id;
+            obj.name = name;
+            obj.description = description;
+            obj.datatype = datatype;
+            switch obj.datatype
+                case 161 % A1 JOYSTICK_DX2_OUTPUT
+                    obj.length = 5;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("Actual speed","mm/s","int_16",maxCycleCount);
+                    obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
+                    obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
+                    obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
+                    obj.data(5) = classes.data("Operated","bit","boolean",maxCycleCount);
+                    obj.data(6) = classes.data("Bouts","bouts/measurement","boolean",1);
+                    obj.data(7) = classes.data("Operating time","s","float_64",1);
+                     if sum(ismember(trialData.Properties.VariableNames,'actuatormode'))
+                          obj.data(8) = classes.data("","","int_8",maxCycleCount);
+                          obj.data(9) = classes.data("","","int_8",maxCycleCount);
+                          obj.data(10) = classes.data("","","boolean",maxCycleCount);
+                          obj.data(11) = classes.data("","","uint_64",maxCycleCount);
+                          obj.data(12) = classes.data("","","float_64",maxCycleCount);
+                         obj.data(13) = classes.data("Actuator mode","1/0","boolean",maxCycleCount);
+                     end
+                    obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.turn);
+                    obj.data(3) = obj.data(3).add_trial1Data(cyclecounter_list,trialData.speed);
+                    obj.data(4) = obj.data(4).add_trial1Data(cyclecounter_list,trialData.profile);
+                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, trialData.turn ~= 0 | trialData.speed ~= 0);
+                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
+                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    
+                      if sum(ismember(trialData.Properties.VariableNames,'actuatormode'))
+                         obj.data(13) = obj.data(13).add_trial1Data(cyclecounter_list,trialData.actuatormode);
+                     end
+                case 162 % A2 JOYSTICK_PG_OUTPUT
+                    obj.length = 6;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("Actual speed","mm/s","int_16",maxCycleCount);
+                    obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
+                    obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
+                    obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
+                    obj.data(5) = classes.data("Mode","number","int_8",maxCycleCount);
+                    obj.data(6) = classes.data("Operated","bit","boolean",maxCycleCount);
+                    obj.data(7) = classes.data("Bouts","bouts/measurement","boolean",1);
+                    obj.data(8) = classes.data("Operating time","s","float_64",1);
+                    if sum(ismember(trialData.Properties.VariableNames,'actuatormode'))
+                          obj.data(9) = classes.data("","","int_8",maxCycleCount);
+                          obj.data(10) = classes.data("","","int_8",maxCycleCount);
+                          obj.data(11) = classes.data("","","boolean",maxCycleCount);
+                          obj.data(12) = classes.data("","","uint_64",maxCycleCount);
+                          obj.data(13) = classes.data("","","float_64",maxCycleCount);
+                         obj.data(14) = classes.data("Actuator mode","1/0","boolean",maxCycleCount);
+                     end
+                    
+                    obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.turn);
+                    obj.data(3) = obj.data(3).add_trial1Data(cyclecounter_list,trialData.speed);
+                    obj.data(4) = obj.data(4).add_trial1Data(cyclecounter_list,trialData.profile);
+                    
+                    obj.data(6) = obj.data(5).add_value(cyclecounter_list, obj.trialData.turn ~= 0 | trialData.speed ~= 0);
+                    flankDet = [obj.data(6).values ;0]- [0; obj.data(6).values];
+                    obj.data(6) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(8) = obj.data(8).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                     if sum(ismember(trialData.Properties.VariableNames,'actuatormode'))
+                         obj.data(14) = obj.data(14).add_trial1Data(cyclecounter_list,trialData.actuatormode);
+                     end
+                case 163 % A3 JOYSTICK_LINX_OUTPUT
+                    obj.length = 5;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("Actual speed","mm/s","int_16",maxCycleCount);
+                    obj.data(2) = classes.data("Turn","raw","int_8",maxCycleCount);
+                    obj.data(3) = classes.data("Speed","raw","int_8",maxCycleCount);
+                    obj.data(4) = classes.data("Profile","number","int_8",maxCycleCount);
+                    obj.data(5) = classes.data("Operated","bit","boolean",maxCycleCount);
+                    obj.data(6) = classes.data("Bouts","bouts/measurement","boolean",1);
+                    obj.data(7) = classes.data("Operating time","s","float_64",1);
+                    if sum(ismember(trialData.Properties.VariableNames,'actuatormode'))
+                           obj.data(8) = classes.data("","","int_8",maxCycleCount);
+                          obj.data(9) = classes.data("","","int_8",maxCycleCount);
+                          obj.data(10) = classes.data("","","boolean",maxCycleCount);
+                          obj.data(11) = classes.data("","","uint_64",maxCycleCount);
+                          obj.data(12) = classes.data("","","float_64",maxCycleCount);
+                         obj.data(13) = classes.data("Actuator mode","1/0","boolean",maxCycleCount);
+                    end
+                     
+                    obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.turn);
+                    obj.data(3) = obj.data(3).add_trial1Data(cyclecounter_list,trialData.speed);
+                    obj.data(4) = obj.data(4).add_trial1Data(cyclecounter_list,trialData.profile);                    
+                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, obj.trialData.turn ~= 0 | trialData.speed ~= 0);
+                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
+                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
+                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    if sum(ismember(trialData.Properties.VariableNames,'actuatormode'))
+                         obj.data(13) = obj.data(13).add_trial1Data(cyclecounter_list,trialData.actuatormode);
+                     end
+                case 177 % B1 IMU_9AXIS_ROT_VEC
+                    obj.length = 26;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("ax","cm/s^2","int_16",maxCycleCount);
+                    obj.data(2) = classes.data("ay","cm/s^2","int_16",maxCycleCount);
+                    obj.data(3) = classes.data("az","cm/s^2","int_16",maxCycleCount);
+                    obj.data(4) = classes.data("gx","0.01 degree/s","int_16",maxCycleCount);
+                    obj.data(5) = classes.data("gy","0.01 degree/s","int_16",maxCycleCount);
+                    obj.data(6) = classes.data("gz","0.01 degree/s","int_16",maxCycleCount);
+                    obj.data(7) = classes.data("mx","0.01 µT","int_16",maxCycleCount);
+                    obj.data(8) = classes.data("my","0.01 µT","int_16",maxCycleCount);
+                    obj.data(9) = classes.data("mz","0.01 µT","int_16",maxCycleCount);
+                    obj.data(10) = classes.data("real","0.001","int_16",maxCycleCount);
+                    obj.data(11) = classes.data("i","0.001","int_16",maxCycleCount);
+                    obj.data(12) = classes.data("j","0.001","int_16",maxCycleCount);
+                    obj.data(13) = classes.data("k","0.001","int_16",maxCycleCount);
+                    if sum(ismember(trialData.Properties.VariableNames,'imu_temperature'))
+                         obj.data(14) = classes.data("temperature","°C","float_64",maxCycleCount);
+                     end
+                    
+                    obj.data(1) = obj.data(1).add_trial1Data(cyclecounter_list,trialData.ax);
+                    obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.ay);
+                    obj.data(3) = obj.data(3).add_trial1Data(cyclecounter_list,trialData.az);
+                    obj.data(4) = obj.data(4).add_trial1Data(cyclecounter_list,trialData.gx);
+                    obj.data(5) = obj.data(5).add_trial1Data(cyclecounter_list,trialData.gy);
+                    obj.data(6) = obj.data(6).add_trial1Data(cyclecounter_list,trialData.gz);
+                    obj.data(7) = obj.data(7).add_trial1Data(cyclecounter_list,trialData.mx);
+                    obj.data(8) = obj.data(8).add_trial1Data(cyclecounter_list,trialData.my);
+                    obj.data(9) = obj.data(9).add_trial1Data(cyclecounter_list,trialData.mz);
+                    if sum(ismember(trialData.Properties.VariableNames,'imu_temperature'))
+                         obj.data(14) =obj.data(14).add_trial1Data(cyclecounter_list,trialData.imu_temperature);
+                     end
+                case 193 % C1 GPS_MIN_DATA
+                    obj.length = 17;
+                    obj.data = classes.data.empty(0,obj.length);
+                    obj.data(1) = classes.data("longitude","degrees","float_32",maxCycleCount);
+                    obj.data(2) = classes.data("latitude","degrees","float_32",maxCycleCount);
+                    obj.data(3) = classes.data("hMSL","m","float_32",maxCycleCount);
+                    obj.data(4) = classes.data("speed","m/s","float_32",maxCycleCount);
+                    obj.data(5) = classes.data("Reception","-","int_8",maxCycleCount);
+                    
+                    obj.data(1) = obj.data(1).add_trial1Data(cyclecounter_list,trialData.longitude);
+                    obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.latitude);
+                    obj.data(5) = obj.data(5).add_trial1Data(cyclecounter_list,trialData.n_sats);
+            end
+            
+            
+            
+        end
         %%  *************** plot function *******************
         function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor, showDistSubs,showGPS)
             % plot all the sensordata object of the instrument.
@@ -722,7 +874,24 @@ classdef instrument < dynamicprops
                         end
                         linkaxes(subplotArray,'x');
                     end
-                    
+                    % plot actuator for trial 1 data                    
+                    if numel(obj.data)>=13
+                        figure();
+                        set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                        set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                        set(0, 'DefaultAxesFontSize', fontSize);
+                        obj.data(13).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                         Title = {[obj.name '- '  ...
+                            datestr(startTime,'dd/mm/yyyy') ,...
+                            ' - Measurement ID: ' num2str(measureID) ' - ' ] ...
+                            [ '- Actuator mode [1/0] -']};
+                        try
+                            sgtitle(Title,'fontsize',fontSize);
+                        catch
+                            suptitle(Title);
+                        end
+                    end
+              
                 case 162 % A2 JOYSTICK PG
                     subplotArray(1) = subplot(2,4,1:4);
                     obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
@@ -820,7 +989,23 @@ classdef instrument < dynamicprops
                         end
                         linkaxes(subplotArray,'x');
                     end
-                    
+                    % plot actuator for trial 1 data
+                      if numel(obj.data)>=14
+                        figure();
+                        set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                        set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                        set(0, 'DefaultAxesFontSize', fontSize);
+                        obj.data(14).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                         Title = {[obj.name '- '  ...
+                            datestr(startTime,'dd/mm/yyyy') ,...
+                            ' - Measurement ID: ' num2str(measureID) ' - ' ] ...
+                            [ '- Actuator mode [1/0] -']};
+                        try
+                            sgtitle(Title,'fontsize',fontSize);
+                        catch
+                            suptitle(Title);
+                        end
+                    end
                 case 163 % A3 JOYSTICK LINX
                     subplotArray(1) = subplot(2,3,1:3);
                     obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
@@ -916,7 +1101,23 @@ classdef instrument < dynamicprops
                         end
                         linkaxes(subplotArray,'x');
                     end
-                    
+                    % plot actuator for trial 1 data                    
+                      if numel(obj.data)>=13
+                        figure();
+                        set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                        set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                        set(0, 'DefaultAxesFontSize', fontSize);
+                        obj.data(13).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                         Title = {[obj.name '- '  ...
+                            datestr(startTime,'dd/mm/yyyy') ,...
+                            ' - Measurement ID: ' num2str(measureID) ' - ' ] ...
+                            [ '- Actuator mode [1/0] -']};
+                        try
+                            sgtitle(Title,'fontsize',fontSize);
+                        catch
+                            suptitle(Title);
+                        end
+                    end
                 case 177 % B1 IMU 9AXIS
                     % accelleration
                     subplotArray(1) = subplot(3,1,1);
@@ -990,6 +1191,22 @@ classdef instrument < dynamicprops
                     obj.data(13).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                     linkaxes(subplotArray,'x');
                     
+                    if numel(obj.data)>=14
+                        figure();
+                        set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                        set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                        set(0, 'DefaultAxesFontSize', fontSize);
+                        obj.data(14).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+%                         Title = {[obj.name '- '  ...
+%                             datestr(startTime,'dd/mm/yyyy') ,...
+%                             ' - Measurement ID: ' num2str(measureID) ' - ' ] ...
+%                             [ '- temperature [°C] -']};
+%                         try
+%                             sgtitle(Title,'fontsize',fontSize);
+%                         catch
+%                             suptitle(Title);
+%                         end
+                    end
                     
                 case 178 % B2 IMU 6AXIS
                     subplotArray(1) = subplot(3,1,1);

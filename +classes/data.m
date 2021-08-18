@@ -93,6 +93,10 @@ classdef data
             
         end
         
+        function obj = add_trial1Data(obj,cyclecounter_list,data)
+            obj.values(cyclecounter_list) = data;
+        end
+        
         function obj = remove_value(obj,cyclecounter_list)
 
             obj.values= obj.values(cyclecounter_list);

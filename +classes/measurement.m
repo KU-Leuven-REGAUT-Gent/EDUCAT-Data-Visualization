@@ -742,12 +742,109 @@ classdef measurement < dynamicprops
             end
             assignin('base',strcat('ID',num2str(obj.id),'_info'),info);
             
-            
-            assignin('base',strcat('ID',num2str(obj.id),'_OAS'),obj.OAS);
+            if isprop(obj,'OAS')
+                assignin('base',strcat('ID',num2str(obj.id),'_OAS'),obj.OAS);
+            end
         end
         %%
         function [] =  save(obj,fname,varargin)
             save(fname,'obj',varargin{:});
+        end
+        %% *********************** Import Trial 1 data ***********************
+        function obj = importTrial1(obj,files)
+            
+            dString= extractBefore(regexp(files(1).folder, '[0-9]+-[0-9]+', 'match'),"-");
+            fCell=struct2cell(files);
+            f= fCell(2,:);
+            
+            tString= extractAfter(cellfun(@(str)regexp(str, '[0-9]+-[0-9]+', 'match'),f),"-");
+           
+            fixClock = hour(datetime(tString,'InputFormat','HHmmss'))<4;
+             files(end+1:end+sum(fixClock),:) =  files(fixClock);
+             files(fixClock) = [];
+            trialTable = struct;
+            warning off ;
+            trialTable= readtable([files(1).folder '\' files(1).name]);
+             trialTable(1,:) = [];
+             
+             if numel(files)>1
+                for i=2:numel(files)
+                    tempTable= readtable([files(i).folder '\' files(i).name]);
+                    tempTable(1,:) = [];
+                    trialTable=[trialTable;tempTable ];
+
+                end
+             end
+                warning on ;
+            if sum(diff(milliseconds(trialTable.timestamp)/20)~=1)>0
+                warning(['Clock deviates from standard sample time (' num2str(sum(diff(milliseconds(trialTable.timestamp)/20)~=1)) ' times)'] );
+            end
+            
+         
+%         Fix for incorrect timestamp between 00:00 and 03:00 
+            trialTable.timestamp(trialTable.timestamp<hours(3)) = trialTable.timestamp(trialTable.timestamp<hours(3)) + hours(20);
+          
+            obj.start_time = datetime(dString,'InputFormat','yyMMdd')+ trialTable.timestamp(2);
+           obj.record_start_time = obj.start_time;
+           
+           obj.record_end_time = datetime(dString,'InputFormat','yyMMdd')+ trialTable.timestamp(end);
+           obj.end_time =  obj.record_end_time;
+           
+           obj.record_duration = obj.record_end_time - obj.record_start_time;
+           obj.measurement_duration = obj.record_duration;
+             obj.id = str2double(dString{1});
+            obj.name = "Imported Trial 1 Data of " + datestr(obj.start_time,'dd-mmm-yyyy');
+            obj.setup_id = 0;
+            obj.setup_name = "Trail 1";
+            obj.user_id = 0;
+            obj.user_name = "unknown";
+            
+             obj.n_instruments=3;
+            obj.instruments = classes.instrument.empty(0,obj.n_instruments);
+             
+            cyclecounter_list = milliseconds(trialTable.timestamp - trialTable.timestamp(1))/20+1;
+           maxCycleCount = max(cyclecounter_list);
+            % JOYSTICK 
+             obj.instruments(1) =  classes.instrument();
+            if (max(trialTable.turn)- min(trialTable.turn)>100) || (max(trialTable.speed)- min(trialTable.speed)>100)
+                datatype = 161;
+                trialTable.turn = trialTable.turn-128;
+                trialTable.speed = trialTable.speed-128;
+            else
+                datatype = 162;
+                trialTable.turn = trialTable.turn-100;
+                trialTable.speed = trialTable.speed-100;
+            end
+            if sum(ismember(trialTable.Properties.VariableNames,'actuatormode'))
+                obj.instruments(1) = obj.instruments(1).importTrial1Instrument(1,'joystick','imported from Trial1',datatype,maxCycleCount, cyclecounter_list,trialTable(:,["turn", "speed","profile","actuatormode"]));
+                obj.instruments(1).addprop('extracted');
+                 obj.instruments(1).extracted = true;
+            else
+                obj.instruments(1) = obj.instruments(1).importTrial1Instrument(1,'joystick','imported from Trial1',datatype,maxCycleCount, cyclecounter_list,trialTable(:,["turn", "speed","profile"]));
+                obj.instruments(1).addprop('extracted');
+                obj.instruments(1).extracted = true;                
+            end
+            % IMU 
+            if sum(ismember(trialTable.Properties.VariableNames,'imu_temperature'))
+                obj.instruments(2) =  classes.instrument();
+                obj.instruments(2) = obj.instruments(2).importTrial1Instrument(2,'IMU 9 axis','imported from Trial1',177,maxCycleCount, cyclecounter_list,trialTable(:,["ax", "ay","az","gx","gy","gz","mx","my","mz","imu_temperature"]));
+                obj.instruments(2).addprop('extracted');
+                obj.instruments(2).extracted = true;
+            else
+                obj.instruments(2) =  classes.instrument();
+                obj.instruments(2) = obj.instruments(2).importTrial1Instrument(2,'IMU 9 axis','imported from Trial1',177,maxCycleCount, cyclecounter_list,trialTable(:,["ax", "ay","az","gx","gy","gz","mx","my","mz"]));
+                obj.instruments(2).addprop('extracted');
+                obj.instruments(2).extracted = true;
+            end
+            % GPS
+            obj.instruments(3) =  classes.instrument();
+            obj.instruments(3) = obj.instruments(3).importTrial1Instrument(3,'GPS','imported from Trial1 - GPS clock and latitude not imported',193,maxCycleCount, cyclecounter_list,trialTable(:,["latitude", "longitude","n_sats"]));
+            obj.instruments(3).addprop('extracted');
+            obj.instruments(3).extracted = true;
+             % PWC actuator
+             
+          
+           
         end
         
         %% *********************** SD card data ***********************
