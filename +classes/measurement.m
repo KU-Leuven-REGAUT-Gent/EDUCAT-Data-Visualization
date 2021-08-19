@@ -754,12 +754,12 @@ classdef measurement < dynamicprops
         function obj = importTrial1(obj,files)
             
             dString= extractBefore(regexp(files(1).folder, '[0-9]+-[0-9]+', 'match'),"-");
+            dString = dString(1,end);
             fCell=struct2cell(files);
-            f= fCell(2,:);
-            
-            tString= extractAfter(cellfun(@(str)regexp(str, '[0-9]+-[0-9]+', 'match'),f),"-");
+            [fPath, fName]=  cellfun(@(str)fileparts(str),fCell(2,:),'UniformOutput',false);
+            fName= extractAfter(fName ,"-");
            
-            fixClock = hour(datetime(tString,'InputFormat','HHmmss'))<4;
+            fixClock = hour(datetime(fName,'InputFormat','HHmmss'))<4;
              files(end+1:end+sum(fixClock),:) =  files(fixClock);
              files(fixClock) = [];
             trialTable = struct;

@@ -1831,6 +1831,7 @@ classdef instrument < dynamicprops
             end
         end
         function [NJS_e, t] = joystickSmoothness(obj,startIndex,scoreD)
+            % TO DO: Add corrected formula plus plot the score ifo time
             x= obj.data(startIndex).values;
             x(isnan(x))=[];
             y= obj.data(startIndex+1).values;
