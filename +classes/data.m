@@ -109,16 +109,16 @@ classdef data
         function obj = resize(obj)
             %obj.value = obj.value;
         end
-        function obj = plot(obj,startTime,enableTitle,enableXlabel,yEnLim,plotDownSample,downSampleFactor)
+        function p = plot(obj,startTime,enableTitle,enableXlabel,yEnLim,plotDownSample,downSampleFactor)
             time = seconds(0:(size(obj.values,1)-1))*0.020 + startTime;
              if plotDownSample
                 factor = size(obj.values,1)/downSampleFactor;
                 warning off backtrace;
                 warning("Disabled at this moment");
                 warning on backtrace;
-                plt(time,obj.values,'LineWidth',2,'downsample',factor);
+               p= plt(time,obj.values,'LineWidth',2,'downsample',factor);
             else
-                plot(time,obj.values,'LineWidth',2);
+               p= plot(time,obj.values,'LineWidth',2);
              end
             if enableTitle
                 title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
