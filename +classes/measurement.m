@@ -774,9 +774,10 @@ classdef measurement < dynamicprops
              if numel(files)>1
                 for i=2:numel(files)
                     tempTable= readtable([files(i).folder '\' files(i).name]);
-                    tempTable(1,:) = [];
-                    trialTable=[trialTable;tempTable ];
-
+                    if numel(tempTable) >0
+                        tempTable(1,:) = [];
+                        trialTable=[trialTable;tempTable ];
+                    end
                 end
              end
                 warning on ;
