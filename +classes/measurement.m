@@ -788,7 +788,7 @@ classdef measurement < dynamicprops
          
 %         Fix for incorrect timestamp between 00:00 and 03:00 
             trialTable.timestamp(trialTable.timestamp<hours(3)) = trialTable.timestamp(trialTable.timestamp<hours(3)) + hours(20);
-          
+          trialTable = sortrows(trialTable,1);
             obj.start_time = datetime(dString,'InputFormat','yyMMdd','TimeZone','local')+ trialTable.timestamp(2);
            obj.record_start_time = obj.start_time;
            
@@ -817,6 +817,7 @@ classdef measurement < dynamicprops
                 trialTable.turn = trialTable.turn-100;
                 trialTable.speed = trialTable.speed-100;
             end
+            
             % Joystick
             obj.instruments(1) =  classes.instrument(1,'joystick','imported from Trial1',160, maxCycleCount,false);
             if sum(ismember(trialTable.Properties.VariableNames,'actuatormode'))

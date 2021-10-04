@@ -748,7 +748,8 @@ classdef instrument < dynamicprops
                     obj.data(8) = obj.data(8).add_trial1Data(cyclecounter_list,trialData.my);
                     obj.data(9) = obj.data(9).add_trial1Data(cyclecounter_list,trialData.mz);
                     if sum(ismember(trialData.Properties.VariableNames,'imu_temperature'))
-                        obj.data(10) =obj.data(10).add_trial1Data(cyclecounter_list,trialData.imu_temperature);
+                        ignoreZeroIndices = trialData.imu_temperature~=0;
+                        obj.data(10) =obj.data(10).add_trial1Data(cyclecounter_list(ignoreZeroIndices),trialData.imu_temperature(ignoreZeroIndices));
                     end
                 case 192 % C0 TRIAL 1 GPS WITH CLOCK
                     obj.data(1) = obj.data(1).add_trial1Data(cyclecounter_list,trialData.longitude);
@@ -1391,30 +1392,14 @@ classdef instrument < dynamicprops
                     % plot gps if filled
                     if sum(isnan(obj.data(1).values))~=numel(obj.data(1).values)
                         if showGPS >0
-                            subplotArray(1) = subplot(2,1,1);
+                            subplotArray(1) = subplot(4,1,1);
                             obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
-                            subplotArray(2) = subplot(2,1,2);
+                            subplotArray(2) = subplot(4,1,2);
                             obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
-                            Title = [obj.name newline  '- ' ...
-                                datestr(datetime(startTime), ...
-                                'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
-                            try
-                                sgtitle(Title,'fontsize',fontSize+2);
-                            catch
-                                suptitle(Title);
-                            end
-                            linkaxes(subplotArray,'x');
-                            figure();
-                            set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
-                            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-                            set(0, 'DefaultAxesFontSize', fontSize);
-                            subplotArray(1) = subplot(3,1,1);
+                            subplotArray(3) = subplot(4,1,3);
                             obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
-                            subplotArray(2) = subplot(3,1,2);
+                            subplotArray(4) = subplot(4,1,4);
                             obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
-                            subplotArray(3) =subplot(3,1,3);
-                            obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
-                            linkaxes(subplotArray,'x');
                             Title = [obj.name newline  '- ' ...
                                 datestr(datetime(startTime), ...
                                 'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1423,19 +1408,41 @@ classdef instrument < dynamicprops
                             catch
                                 suptitle(Title);
                             end
+                            linkaxes(subplotArray,'x');
+%                             figure();
+%                             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+%                             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+%                             set(0, 'DefaultAxesFontSize', fontSize);
+%                             
+%                             
+%                             subplotArray(3) =subplot(3,1,3);
+%                             obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+%                             linkaxes(subplotArray,'x');
+%                             Title = [obj.name newline  '- ' ...
+%                                 datestr(datetime(startTime), ...
+%                                 'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
+%                             try
+%                                 sgtitle(Title,'fontsize',fontSize+2);
+%                             catch
+%                                 suptitle(Title);
+%                             end
                         end
                         if showGPS == 1 || showGPS == 3
                             figure()
                             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                             set(0, 'DefaultAxesFontSize', fontSize);
+                            indexLatNotZero = obj.data(2).values(:)~=0;
+                            if sum(indexLatNotZero)~= numel(obj.data(2).values(:))
+                                disp('PS locations with latitude equal to 0 are not shown but are present in the data')
+                            end
                             if plotDownSample
-                                factor = size(obj.data(2).values,1)/downSampleFactor;
-                                plt(obj.data(1).values, obj.data(2).values,'+','downsample',factor);
+                                factor = size(obj.data(2).values(indexLatNotZero),1)/downSampleFactor;
+                                plt(obj.data(1).values(indexLatNotZero), obj.data(2).values(indexLatNotZero),'+','downsample',factor);
                                 xlabel(obj.data(1).name);
                                 ylabel(obj.data(2).name);
                             else
-                                plot(obj.data(1).values, obj.data(2).values,'+');
+                                plot(obj.data(1).values(indexLatNotZero), obj.data(2).values(indexLatNotZero),'+','LineWidth',2);
                                 Title = [obj.name newline  '- ' ...
                                     datestr(datetime(startTime), ...
                                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1454,7 +1461,16 @@ classdef instrument < dynamicprops
                             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                             set(0, 'DefaultAxesFontSize', fontSize);
-                            gx =geoscatter(obj.data(2).values(:), obj.data(1).values(:));
+                            indexLatNotZero = obj.data(2).values(:)~=0;
+                            if sum(indexLatNotZero)~= numel(obj.data(2).values(:))
+                                disp('PS locations with latitude equal to 0 are not shown but are present in the data')
+                            end
+                            gx =geoscatter(obj.data(2).values(indexLatNotZero), obj.data(1).values(indexLatNotZero));
+                            gx.MarkerEdgeColor = 'r';  
+                            gx.LineWidth = 3;
+                            if min(obj.data(2).values(indexLatNotZero))/max(obj.data(2).values(indexLatNotZero))<0.01
+                                gx.LineWidth = 10;
+                            end
                             gx.Parent.FontSize =fontSize;
                             geobasemap satellite
                             [latlim, lonlim] = geolimits;
@@ -1530,13 +1546,18 @@ classdef instrument < dynamicprops
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
+                         indexLatNotZero = obj.data(2).values(:)~=0;
+                        if sum(indexLatNotZero)~= numel(obj.data(2).values(:))
+                            disp('PS locations with latitude equal to 0 are not shown but are present in the data')
+                        end
+                            
                         if plotDownSample
-                            factor = size(obj.data(2).values,1)/downSampleFactor;
-                            plt(obj.data(1).values, obj.data(2).values,'+','downsample',factor);
+                            factor = size(obj.data(2).values(indexLatNotZero),1)/downSampleFactor;
+                            plt(obj.data(1).values(indexLatNotZero), obj.data(2).values(indexLatNotZero),'+','downsample',factor);
                             xlabel(obj.data(1).name);
                             ylabel(obj.data(2).name);
                         else
-                            plot(obj.data(1).values, obj.data(2).values,'+');
+                            plot(obj.data(1).values(indexLatNotZero), obj.data(2).values(indexLatNotZero),'+','LineWidth',2);
                             Title = [obj.name newline  '- ' ...
                                 datestr(datetime(startTime), ...
                                 'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1555,7 +1576,14 @@ classdef instrument < dynamicprops
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
-                        gx =geoscatter(obj.data(2).values(:), obj.data(1).values(:));
+                         indexLatNotZero = obj.data(2).values(:)~=0;
+                        if sum(indexLatNotZero)~= numel(obj.data(2).values(:))
+                            disp('PS locations with latitude equal to 0 are not shown but are present in the data')
+                        end
+                            
+                        gx =geoscatter(obj.data(2).values(indexLatNotZero), obj.data(1).values(indexLatNotZero));
+                        gx.MarkerEdgeColor = 'r';  
+                        gx.LineWidth = 3;
                         gx.Parent.FontSize =fontSize;
                         geobasemap satellite
                         [latlim, lonlim] = geolimits;

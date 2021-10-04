@@ -117,8 +117,12 @@ classdef data
                 warning("Disabled at this moment");
                 warning on backtrace;
                p= plt(time,obj.values,'LineWidth',2,'downsample',factor);
-            else
-               p= plot(time,obj.values,'LineWidth',2);
+             else
+                if sum(~isnan(obj.values))/numel(obj.values)<=0.1
+                     p= plot(time,obj.values,'+','LineWidth',2);
+                else
+                    p= plot(time,obj.values,'LineWidth',2);
+                end
              end
             if enableTitle
                 title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);

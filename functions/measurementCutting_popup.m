@@ -65,7 +65,7 @@ function confirmButtonPushed(fig,m,strtTime,endTime)
             % start time of measurement to the next sample if start
             % time is not a multiple of 0.02
             startDiff =time2num(startTimeConv  - m.start_time,"seconds");
-             endDiff =time2num(m.end_time  - endTimeConv,"seconds");
+            endDiff =time2num(m.end_time  - endTimeConv,"seconds");
              ret = false;
             if startDiff <-3.552713678800501e-18
                 strtTime.BackgroundColor = 'r';
