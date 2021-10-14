@@ -231,29 +231,26 @@ classdef instrument < dynamicprops
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,3) ~= 0 | blob(:,4) ~= 0);
-                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
-                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    
+                    % calculate operation, operation time and bouts
+                    obj.joystickCalculations(5,blob(:,3),blob(:,4),cyclecounter_list);
                 case 162 % A2
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
                     obj.data(5) = obj.data(5).add_value(cyclecounter_list, blob(:,6));
-                    obj.data(6) = obj.data(6).add_value(cyclecounter_list, blob(:,3) ~= 0 | blob(:,4) ~= 0);
-                    flankDet = [obj.data(6).values ;0]- [0; obj.data(6).values];
-                    obj.data(7) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(8) = obj.data(8).filteredData(1,sum(rmmissing(obj.data(6).values))*0.02);
+                    
+                    % calculate operation, operation time and bouts
+                    obj.joystickCalculations(6,blob(:,3),blob(:,4),cyclecounter_list);
                 case 163 % A3
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3));
                     obj.data(3) = obj.data(3).add_value(cyclecounter_list, blob(:,4));
                     obj.data(4) = obj.data(4).add_value(cyclecounter_list, blob(:,5));
-                    obj.data(5) =  obj.data(6).add_value(cyclecounter_list, blob(:,4) ~= 0 | blob(:,5) ~= 0);
-                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
-                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    
+                    % calculate operation, operation time and bouts
+                    obj.joystickCalculations(5,blob(:,3),blob(:,4),cyclecounter_list);
                 case 177 % B1
                     obj.data(1) = obj.data(1).add_value(cyclecounter_list, blob(:,1:2));
                     obj.data(2) = obj.data(2).add_value(cyclecounter_list, blob(:,3:4));
@@ -341,6 +338,18 @@ classdef instrument < dynamicprops
                     obj.data(11) = obj.data(11).add_value(cyclecounter_list, bitand(blob(:,3),64)==64);
                     obj.data(12) = obj.data(12).add_value(cyclecounter_list, bitand(uint8(blob(:,3)),128)==128);
             end
+        end
+        
+        function obj = joystickCalculations(obj,startIndexInstrument,blobTurn,blobSpeed,cyclecounter_list)
+            % operated bit 
+            blobTurn(isnan(blobTurn)) = []; % remove all NaN otherwise incorrect Operated bit and all other calculations
+            blobSpeed(isnan(blobSpeed)) = [];
+            obj.data(startIndexInstrument) = obj.data(startIndexInstrument).add_value(cyclecounter_list, blobTurn ~= 0 | blobSpeed ~= 0);
+            flankDet = [obj.data(startIndexInstrument).values ;0]- [0; obj.data(startIndexInstrument).values];
+            % Bouts calculation
+            obj.data(startIndexInstrument+1) = obj.data(startIndexInstrument+1).add_value(1,sum(flankDet(flankDet>0)));
+            % Operating time
+            obj.data(startIndexInstrument+2) = obj.data(startIndexInstrument+2).filteredData(1,sum(rmmissing(obj.data(startIndexInstrument).values))*0.02);
         end
         
         %%  *************** remove data function *******************
@@ -733,10 +742,9 @@ classdef instrument < dynamicprops
                     obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.turn);
                     obj.data(3) = obj.data(3).add_trial1Data(cyclecounter_list,trialData.speed);
                     obj.data(4) = obj.data(4).add_trial1Data(cyclecounter_list,trialData.profile);
-                    obj.data(5) = obj.data(5).add_value(cyclecounter_list, trialData.turn ~= 0 | trialData.speed ~= 0);
-                    flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
-                    obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    
+                   % calculate operation, operation time and bouts
+                    obj.joystickCalculations(5,trialData.turn, trialData.speed,cyclecounter_list);
                 case 176 % B0 TRIAL 1 IMU with temperature
                     obj.data(1) = obj.data(1).add_trial1Data(cyclecounter_list,trialData.ax);
                     obj.data(2) = obj.data(2).add_trial1Data(cyclecounter_list,trialData.ay);
@@ -763,7 +771,59 @@ classdef instrument < dynamicprops
                     error("Datatype unsupported");
             end
         end
+        function obj = createActuatorControl(obj,cyclecounter_list,actuatorControlArray)
+            % Create actuatorControl structure
+            % Copy the joystick data when actuator mode equals 1
+            % because joystick controls now the actuators instead of
+            % the motors
+            % 
+            %Declaration
+            if( ~isprop(obj,'actuatorControl')) 
+                obj.addprop('actuatorControl');
+            end
+            obj.actuatorControl.turn = NaN(numel(obj.data(2).values,1));
+            obj.actuatorControl.speed = NaN(numel(obj.data(3).values,1));
+            
+            %Copy turn and speed to actuatorControl when actuator mode is
+            %active
+            obj.actuatorControl.turn(actuatorControlArray) = obj.data(2).values(actuatorControlArray);
+            obj.actuatorControl.speed(actuatorControlArray) = obj.data(3).values(actuatorControlArray);
+            
+            %Set Turn and speed in Instrument to zero when actuator mode is
+            %active
+            obj.data(2).values(actuatorControlArray) = 0;
+            obj.data(3).values(actuatorControlArray) = 0;
+            
+            % recalculate the operation time, operated and bauts
+            obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cyclecounter_list);
+        end
         
+        function obj = createAttendantControl(obj,cyclecounter_list,attendantInControlArray)
+            % Create actuatorControl structure
+            % Copy the joystick data when actuator mode equals 1
+            % because joystick controls now the actuators instead of
+            % the motors
+            % 
+            %Declaration
+            if( ~isprop(obj,'attendantControl')) 
+                obj.addprop('attendantControl');
+            end
+            obj.attendantControl.turn = NaN(numel(obj.data(2).values,1));
+            obj.attendantControl.speed = NaN(numel(obj.data(3).values,1));
+            
+            %Copy turn and speed to actuatorControl when actuator mode is
+            %active
+            obj.attendantControl.turn(attendantInControlArray) = obj.data(2).values(attendantInControlArray);
+            obj.attendantControl.speed(attendantInControlArray) = obj.data(3).values(attendantInControlArray);
+            
+            %Set Turn and speed in Instrument to zero when actuator mode is
+            %active
+            obj.data(2).values(attendantInControlArray) = 0;
+            obj.data(3).values(attendantInControlArray) = 0;
+            
+            % recalculate the operation time, operated and bauts
+            obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cyclecounter_list);
+        end
         %%  *************** plot function *******************
         function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor, showDistSubs,showGPS)
             % plot all the sensordata object of the instrument.
@@ -832,12 +892,28 @@ classdef instrument < dynamicprops
                         linkaxes(subplotArray,'x');
                     end   
                     disp("---------  operating times in specific profile ---------")
-                    disp("    Operating time in profile 1: " + round(sum(obj.data(4).values==1)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 2: " + round(sum(obj.data(4).values==2)*0.02,2)+" s");
-                    disp("    Operating time in profile 3: " + round(sum(obj.data(4).values==3)*0.02,2)+" s");
-                    disp("    Operating time in profile 4: " + round(sum(obj.data(4).values==4)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 5: " + round(sum(obj.data(4).values==5)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 6: " + round(sum(obj.data(4).values==6)*0.02,2)+" s" + newline);
+                    profile = [0; 1; 2; 3; 4; 5; 6];
+                    OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);                    
+                    OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
+                    table(profile,OperatingTimeInSec)
+                    if obj.filtered
+                         disp("---------  Filtered operating times in specific profile ---------")
+                        profile = [0; 1; 2; 3; 4; 5; 6];
+                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
+                        table(profile,OperatingTimeInSec)
+                    end
+                    
                     
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
@@ -934,12 +1010,28 @@ classdef instrument < dynamicprops
                     end
                     linkaxes(subplotArray,'x');
                     disp("---------  operating times in specific profile ---------")
-                    disp("    Operating time in profile 1: " + round(sum(obj.data(4).values==1)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 2: " + round(sum(obj.data(4).values==2)*0.02,2)+" s");
-                    disp("    Operating time in profile 3: " + round(sum(obj.data(4).values==3)*0.02,2)+" s");
-                    disp("    Operating time in profile 4: " + round(sum(obj.data(4).values==4)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 5: " + round(sum(obj.data(4).values==5)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 6: " + round(sum(obj.data(4).values==6)*0.02,2)+" s" + newline);
+                    profile = [ 1; 2; 3; 4; 5; 6];
+                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);                    
+                    OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
+                    table(profile,OperatingTimeInSec)
+                    
+                     if obj.filtered
+                         disp("---------  Filtered operating times in specific profile ---------")
+                        profile = [0; 1; 2; 3; 4; 5; 6];
+                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
+                        table(profile,OperatingTimeInSec)
+                     end
+                    
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
                     
@@ -1038,12 +1130,27 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     
                     disp("---------  operating times in specific profile ---------")
-                    disp("    Operating time in profile 1: " + round(sum(obj.data(4).values==1)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 2: " + round(sum(obj.data(4).values==2)*0.02,2)+" s");
-                    disp("    Operating time in profile 3: " + round(sum(obj.data(4).values==3)*0.02,2)+" s");
-                    disp("    Operating time in profile 4: " + round(sum(obj.data(4).values==4)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 5: " + round(sum(obj.data(4).values==5)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 6: " + round(sum(obj.data(4).values==6)*0.02,2)+" s" + newline);
+                    profile = [ 1; 2; 3; 4; 5];
+                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(6).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(6).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(6).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(6).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(6).values ==1)*0.02 ,2);  
+                    table(profile,OperatingTimeInSec)
+                    
+                     if obj.filtered
+                         disp("---------  Filtered operating times in specific profile ---------")
+                        profile = [0; 1; 2; 3; 4; 5; 6];
+                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(11).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(11).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(11).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(11).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(11).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(11).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(11).values ==1)*0.02 ,2);
+                        table(profile,OperatingTimeInSec)
+                     end
+                    
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
                     
@@ -1141,12 +1248,28 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     
                     disp("---------  operating times in specific profile ---------")
-                    disp("    Operating time in profile 1: " + round(sum(obj.data(4).values==1)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 2: " + round(sum(obj.data(4).values==2)*0.02,2)+" s");
-                    disp("    Operating time in profile 3: " + round(sum(obj.data(4).values==3)*0.02,2)+" s");
-                    disp("    Operating time in profile 4: " + round(sum(obj.data(4).values==4)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 5: " + round(sum(obj.data(4).values==5)*0.02 ,2)+" s");
-                    disp("    Operating time in profile 6: " + round(sum(obj.data(4).values==6)*0.02,2)+" s" + newline);
+                    profile = [ 1; 2; 3; 4; 5; 6];
+                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);                    
+                    OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
+                    table(profile,OperatingTimeInSec)
+                    
+                     if obj.filtered
+                         disp("---------  Filtered operating times in specific profile ---------")
+                        profile = [0; 1; 2; 3; 4; 5; 6];
+                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
+                        table(profile,OperatingTimeInSec)
+                     end
+                    
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
                     

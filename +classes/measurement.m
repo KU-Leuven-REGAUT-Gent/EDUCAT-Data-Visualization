@@ -86,7 +86,7 @@ classdef measurement < dynamicprops
                 if ~exist('jdbc', 'dir')
                     mkdir('jdbc')
                 end
-                error("JDBC MySQL Connector not found, please download the connector from https://downloads.mysql.com/archives/get/p/3/file/mysql-connector-java-8.0.18.zip and extract it in the 'jdbc' directory. Note: the mysql-connector-java-8.0.18.jar musn't be placed in a subdirectory, but directly in the root of the jdbc directory.");
+                error('JDBC MySQL Connector not found, please download the connector from <a href = "https://downloads.mysql.com/archives/get/p/3/file/mysql-connector-java-8.0.18.zip">The MySQL Web Site</a> and extract it in the "jdbc" directory. Note: the mysql-connector-java-8.0.18.jar should not be placed in a subdirectory, but directly in the root of the jdbc directory.');
             end
             
             databaseName = "educat";
@@ -112,11 +112,11 @@ classdef measurement < dynamicprops
             server = "jdbc:mysql://clouddb.myriade.be:20100/";
             % local database
             
-                if useLocal
-                    server =  "jdbc:mysql://" + localUrl + ":20100/";
-                    password = input(' EDUCAT DB password: ','s');
-                end
-                
+            if useLocal
+                server =  "jdbc:mysql://" + localUrl + ":20100/";
+                password = input(' EDUCAT DB password: ','s');
+            end
+            
             % TODO: Check for valid connection
             obj.conn = database(databaseName, username, password, jdbcDriver, server);
             
@@ -215,7 +215,7 @@ classdef measurement < dynamicprops
             if contains(date,"full",'IgnoreCase',true) || date==""  || isempty(date)
                 obj.start_time = datetime(measurement_info.started_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
                 obj.record_end_time = datetime(measurement_info.stopped_at,'InputFormat','yyyy-MM-dd HH:mm:ss.SSS','TimeZone','local');
-                 obj.end_time = obj.start_time + seconds(double(obj.max_cycleCount-1)*0.02);
+                obj.end_time = obj.start_time + seconds(double(obj.max_cycleCount-1)*0.02);
                 if  obj.max_cycleCount == -2147483648
                     timeDiff = obj.end_time - obj.start_time;
                     pulled_cycleCounts = seconds(timeDiff)/0.02;
@@ -280,8 +280,8 @@ classdef measurement < dynamicprops
                     dur = input('enter a duration > 0: ');
                     trials = trials+1;
                 end
-                 dur = dur(1)*60*60 + dur(2)*60 + dur(3); % conversion array to seconds
-                 obj.end_cycleCount =  obj.start_cycleCount +floor( dur/0.02)-1;
+                dur = dur(1)*60*60 + dur(2)*60 + dur(3); % conversion array to seconds
+                obj.end_cycleCount =  obj.start_cycleCount +floor( dur/0.02)-1;
                 if obj.end_cycleCount > obj.max_cycleCount
                     obj.end_cycleCount = int64(obj.max_cycleCount);
                 end
@@ -383,7 +383,7 @@ classdef measurement < dynamicprops
         end
         
         %% *********************** Get data ***************************
-       function obj = get_dataset_DB(obj,excludeInstruments,addDistSubs)
+        function obj = get_dataset_DB(obj,excludeInstruments,addDistSubs)
             %Get the dataset from the 'STP_measurement_dataset table'.
             %This contains all the data inside the chosen range
             %MATLAB will get the data in parts of maximum 5000.
@@ -467,7 +467,7 @@ classdef measurement < dynamicprops
                 if isequal(missingCycles{1},missingCycles{:})
                     warning off backtrace;
                     warning("All instruments miss following cycle counters: (first 25 are shown)\n%s %s", ...
-                         join(string(missingCycles{1}(1:min([25 size(missingCycles{1},2)]))),", "));
+                        join(string(missingCycles{1}(1:min([25 size(missingCycles{1},2)]))),", "));
                     warning on backtrace;
                 else
                     for i= 1: obj.n_instruments
@@ -554,7 +554,7 @@ classdef measurement < dynamicprops
             end
             % cutting start time is earlier than the start time of the
             % measurement
-            if startDiff < 0 
+            if startDiff < 0
                 warning off backtrace;
                 warning(['The start time of the cutting must be further in time than the start time of the measurement (' , datestr(datetime(obj.start_time)),')', newline, 'Rerun this section again or pull/load the measurement again in section 1 in the case that the measurement was already cut in time.'] )
                 warning on backtrace;
@@ -755,61 +755,81 @@ classdef measurement < dynamicprops
             save(fname,'obj',varargin{:});
         end
         %% *********************** Import Trial 1 data ***********************
-        function obj = importTrial1(obj,files)
+        function obj = importTrial1(obj,files,splitAttendant,splitActuator)
             
             dString= extractBefore(regexp(files(1).folder, '[0-9]+-[0-9]+', 'match'),"-");
             dString = dString(1,end);
             fCell=struct2cell(files);
             [fPath, fName]=  cellfun(@(str)fileparts(str),fCell(2,:),'UniformOutput',false);
             fName= extractAfter(fName ,"-");
-           
+            
             fixClock = hour(datetime(fName,'InputFormat','HHmmss'))<4;
-             files(end+1:end+sum(fixClock),:) =  files(fixClock);
-             files(fixClock) = [];
+            files(end+1:end+sum(fixClock),:) =  files(fixClock);
+            files(fixClock) = [];
             trialTable = struct;
             warning off ;
             trialTable= readtable([files(1).folder '\' files(1).name]);
-             trialTable(1,:) = [];
-             
-             if numel(files)>1
+            trialTable(1,:) = [];
+            
+            if numel(files)>1
                 for i=2:numel(files)
-                    tempTable= readtable([files(i).folder '\' files(i).name]);
-                    if numel(tempTable) >0
-                        tempTable(1,:) = [];
-                        trialTable=[trialTable;tempTable ];
-                    end
+%                     fileID = fopen([files(i).folder '\' files(i).name],'r');                  
+%                     dayOfFile = extractBetween(fscanf(fileID,'%s'),'###','-');
+%                     fclose(fileID);
+%                     if strcmp(extractBefore(files(i).name,'-'),dayOfFile)
+                        tempTable= readtable([files(i).folder '\' files(i).name]);
+                        if numel(tempTable) >0
+                            tempTable(1,:) = [];
+                            trialTable=[trialTable;tempTable ];
+                        end
+%                     end
                 end
-             end
-                warning on ;
+            end
+            warning on ;
             if sum(diff(milliseconds(trialTable.timestamp)/20)~=1)>0
                 warning(['Clock deviates from standard sample time (' num2str(sum(diff(milliseconds(trialTable.timestamp)/20)~=1)) ' times)'] );
             end
             
-         
-%         Fix for incorrect timestamp between 00:00 and 03:00 
+            
+            % Fix for incorrect timestamp between 00:00 and 03:00
             trialTable.timestamp(trialTable.timestamp<hours(3)) = trialTable.timestamp(trialTable.timestamp<hours(3)) + hours(20);
-          trialTable = sortrows(trialTable,1);
+            trialTable = sortrows(trialTable,1);
+            
+            % check on unique cycles
+            [~,idxu,idxc] = unique(trialTable.timestamp);
+            % count unique values 
+            [count, ~, idxcount] = histcounts(idxc,numel(idxu));
+            % Where is greater than one occurence
+            idxkeep = count(idxcount)>1;
+            % Extract from C
+            if numel(trialTable.timestamp(idxkeep,:))>0
+                error('There are double measurement on cycles')
+            end
+            
             obj.start_time = datetime(dString,'InputFormat','yyMMdd','TimeZone','local')+ trialTable.timestamp(2);
-           obj.record_start_time = obj.start_time;
-           
-           obj.record_end_time = datetime(dString,'InputFormat','yyMMdd','TimeZone','local')+ trialTable.timestamp(end);
-           obj.end_time =  obj.record_end_time;
-           
-           obj.record_duration = obj.record_end_time - obj.record_start_time;
-           obj.measurement_duration = obj.record_duration;
-             obj.id = str2double(dString{1});
+            obj.record_start_time = obj.start_time;
+            
+            obj.record_end_time = datetime(dString,'InputFormat','yyMMdd','TimeZone','local')+ trialTable.timestamp(end);
+            obj.end_time =  obj.record_end_time;
+            
+            obj.record_duration = obj.record_end_time - obj.record_start_time;
+            obj.measurement_duration = obj.record_duration;
+            obj.id = str2double(dString{1});
             obj.name = "Imported Trial 1 Data of " + datestr(obj.start_time,'dd-mmm-yyyy');
             obj.setup_id = 0;
             obj.setup_name = "Trail 1";
             obj.user_id = 0;
             obj.user_name = "unknown";
             % ------------------ creating instruments -------------------
-             obj.n_instruments=3;
+            obj.n_instruments=3;
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
-             
+            
+            % cyclecounter_list contains only indices when a datasample is
+            % measured (there will be gaps)
             cyclecounter_list = milliseconds(trialTable.timestamp - trialTable.timestamp(1))/20+1;
-           maxCycleCount = max(cyclecounter_list);
-            % JOYSTICK 
+            maxCycleCount = max(cyclecounter_list);
+            
+            % JOYSTICK
             if (max(trialTable.turn)- min(trialTable.turn)>100) || (max(trialTable.speed)- min(trialTable.speed)>100)
                 trialTable.turn = trialTable.turn-128;
                 trialTable.speed = trialTable.speed-128;
@@ -820,17 +840,30 @@ classdef measurement < dynamicprops
             
             % Joystick
             obj.instruments(1) =  classes.instrument(1,'joystick','imported from Trial1',160, maxCycleCount,false);
-            if sum(ismember(trialTable.Properties.VariableNames,'actuatormode'))
+            if sum(ismember(trialTable.Properties.VariableNames,'actuatormode')) %check if actuator mode is in csv imported data
                 obj.instruments(1) = obj.instruments(1).importTrial1Instrument( cyclecounter_list,trialTable(:,["turn", "speed","profile","actuatormode"]));
-                obj.instruments(1).addprop('extracted');
-                 obj.instruments(1).extracted = true;
-            else
-                obj.instruments(1) = obj.instruments(1).importTrial1Instrument(cyclecounter_list,trialTable(:,["turn", "speed","profile"]));
+                if splitActuator
+                    obj = obj.splitActuatorUsage(cyclecounter_list);
+                end
+                if splitAttendant
+                    obj = obj.splitAttendantUsage(cyclecounter_list);
+                end
+                
                 obj.instruments(1).addprop('extracted');
                 obj.instruments(1).extracted = true;                
+            else
+                obj.instruments(1) = obj.instruments(1).importTrial1Instrument(cyclecounter_list,trialTable(:,["turn", "speed","profile"]));
+               if splitActuator
+                    obj = obj.splitActuatorUsage(cyclecounter_list);
+                end
+                if splitAttendant
+                    obj = obj.splitAttendantUsage(cyclecounter_list);
+                end
+                obj.instruments(1).addprop('extracted');
+                obj.instruments(1).extracted = true;
             end
-
-            % IMU 
+            
+            % IMU
             obj.instruments(2) =  classes.instrument(2,'IMU 9 axis','imported from Trial1',176, maxCycleCount,false);
             if sum(ismember(trialTable.Properties.VariableNames,'imu_temperature'))
                 obj.instruments(2) = obj.instruments(2).importTrial1Instrument(cyclecounter_list,trialTable(:,["ax", "ay","az","gx","gy","gz","mx","my","mz","imu_temperature"]));
@@ -845,9 +878,33 @@ classdef measurement < dynamicprops
             obj.instruments(3) =  classes.instrument(3,'GPS','imported from Trial1',192, maxCycleCount,false);
             obj.instruments(3) = obj.instruments(3).importTrial1Instrument(cyclecounter_list,trialTable(:,["latitude", "longitude","altitude","n_sats","gps_hour","gps_min","gps_sec"]));
             obj.instruments(3).addprop('extracted');
-            obj.instruments(3).extracted = true;          
+            obj.instruments(3).extracted = true;
         end
         
+        function obj = splitAttendantUsage(obj,cyclecounter_list)
+            if ~isempty(obj.instruments(1).data(4).values)
+                attendantInControlArray = obj.instruments(1).data(4).values == 6;
+                
+                % This function copy joystick data to new actuatorMode
+                % sturcture inside instruments when actuator mode
+                % equals 1 and sets the corresponding data in de turn
+                % and speed to zero
+                obj.instruments(1) = obj.instruments(1).createAttendantControl(cyclecounter_list,attendantInControlArray);
+            end
+            
+        end
+        function obj = splitActuatorUsage(obj,cyclecounter_list)
+            if ~isempty(obj.instruments(1).data(1).values)
+                actuatorControlArray = obj.instruments(1).data(1).values == 1;
+                
+                % This function copy joystick data to new actuatorMode
+                % sturcture inside instruments when actuator mode
+                % equals 1 and sets the corresponding data in de turn
+                % and speed to zero
+                obj.instruments(1) = obj.instruments(1).createActuatorControl(cyclecounter_list,actuatorControlArray);
+            end
+            
+        end
         %% *********************** SD card data ***********************
         function obj = get_measurement_fromSD(obj)
             % in progress
