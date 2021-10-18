@@ -889,7 +889,11 @@ classdef measurement < dynamicprops
                 % sturcture inside instruments when actuator mode
                 % equals 1 and sets the corresponding data in de turn
                 % and speed to zero
-                obj.instruments(1) = obj.instruments(1).createAttendantControl(cyclecounter_list,attendantInControlArray);
+                if sum(attendantInControlArray) ~=0
+                    obj.instruments(1) = obj.instruments(1).createAttendantControl(cyclecounter_list,attendantInControlArray);
+                else
+                    warning("No attendant control during the measurement");
+                end
             end
             
         end

@@ -341,7 +341,7 @@ classdef instrument < dynamicprops
         end
         
         function obj = joystickCalculations(obj,startIndexInstrument,blobTurn,blobSpeed,cyclecounter_list)
-            % operated bit 
+            % operated bit
             blobTurn(isnan(blobTurn)) = []; % remove all NaN otherwise incorrect Operated bit and all other calculations
             blobSpeed(isnan(blobSpeed)) = [];
             obj.data(startIndexInstrument) = obj.data(startIndexInstrument).add_value(cyclecounter_list, blobTurn ~= 0 | blobSpeed ~= 0);
@@ -743,7 +743,7 @@ classdef instrument < dynamicprops
                     obj.data(3) = obj.data(3).add_trial1Data(cyclecounter_list,trialData.speed);
                     obj.data(4) = obj.data(4).add_trial1Data(cyclecounter_list,trialData.profile);
                     
-                   % calculate operation, operation time and bouts
+                    % calculate operation, operation time and bouts
                     obj.joystickCalculations(5,trialData.turn, trialData.speed,cyclecounter_list);
                 case 176 % B0 TRIAL 1 IMU with temperature
                     obj.data(1) = obj.data(1).add_trial1Data(cyclecounter_list,trialData.ax);
@@ -776,9 +776,9 @@ classdef instrument < dynamicprops
             % Copy the joystick data when actuator mode equals 1
             % because joystick controls now the actuators instead of
             % the motors
-            % 
+            %
             %Declaration
-            if( ~isprop(obj,'actuatorControl')) 
+            if( ~isprop(obj,'actuatorControl'))
                 obj.addprop('actuatorControl');
             end
             obj.actuatorControl.turn = NaN(numel(obj.data(2).values,1));
@@ -803,9 +803,9 @@ classdef instrument < dynamicprops
             % Copy the joystick data when actuator mode equals 1
             % because joystick controls now the actuators instead of
             % the motors
-            % 
+            %
             %Declaration
-            if( ~isprop(obj,'attendantControl')) 
+            if( ~isprop(obj,'attendantControl'))
                 obj.addprop('attendantControl');
             end
             obj.attendantControl.turn = NaN(numel(obj.data(2).values,1));
@@ -878,7 +878,7 @@ classdef instrument < dynamicprops
                         p=obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         p.Marker= '*';
                         text(startTime+ seconds(1),0.5, "Operating time: " + round(sum(obj.data(1).values==1)*0.02,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
-               
+                        
                         subplotArray(2) = subplot(2,1,2);
                         obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...
@@ -890,7 +890,16 @@ classdef instrument < dynamicprops
                             suptitle(Title);
                         end
                         linkaxes(subplotArray,'x');
-                    end   
+                    end
+                    
+                    % ----- Plot separated  speed and turn
+                    if isprop(obj,'actuatorControl')
+                        obj.plotJoystickSpeedTurn(obj.actuatorControl, measureID, 'Actuator Control',startTime);
+                    end
+                    if isprop(obj,'attendantControl')
+                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime);
+                    end
+                    
                     disp("---------  operating times in specific profile ---------")
                     profile = [0; 1; 2; 3; 4; 5; 6];
                     OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(5).values ==1)*0.02 ,2);
@@ -898,18 +907,18 @@ classdef instrument < dynamicprops
                     OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);                    
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
                     table(profile,OperatingTimeInSec)
                     if obj.filtered
-                         disp("---------  Filtered operating times in specific profile ---------")
+                        disp("---------  Filtered operating times in specific profile ---------")
                         profile = [0; 1; 2; 3; 4; 5; 6];
                         OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
                         table(profile,OperatingTimeInSec)
                     end
@@ -1015,22 +1024,22 @@ classdef instrument < dynamicprops
                     OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);                    
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
                     table(profile,OperatingTimeInSec)
                     
-                     if obj.filtered
-                         disp("---------  Filtered operating times in specific profile ---------")
+                    if obj.filtered
+                        disp("---------  Filtered operating times in specific profile ---------")
                         profile = [0; 1; 2; 3; 4; 5; 6];
                         OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
                         table(profile,OperatingTimeInSec)
-                     end
+                    end
                     
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
@@ -1135,21 +1144,21 @@ classdef instrument < dynamicprops
                     OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(6).values ==1)*0.02 ,2);
                     OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(6).values ==1)*0.02 ,2);
                     OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(6).values ==1)*0.02 ,2);  
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(6).values ==1)*0.02 ,2);
                     table(profile,OperatingTimeInSec)
                     
-                     if obj.filtered
-                         disp("---------  Filtered operating times in specific profile ---------")
+                    if obj.filtered
+                        disp("---------  Filtered operating times in specific profile ---------")
                         profile = [0; 1; 2; 3; 4; 5; 6];
                         OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(11).values ==1)*0.02 ,2);
                         OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(11).values ==1)*0.02 ,2);
                         OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(11).values ==1)*0.02 ,2);
                         OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(11).values ==1)*0.02 ,2);
                         OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(11).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(11).values ==1)*0.02 ,2);
                         OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(11).values ==1)*0.02 ,2);
                         table(profile,OperatingTimeInSec)
-                     end
+                    end
                     
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
@@ -1253,22 +1262,22 @@ classdef instrument < dynamicprops
                     OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);                    
+                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);
                     OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
                     table(profile,OperatingTimeInSec)
                     
-                     if obj.filtered
-                         disp("---------  Filtered operating times in specific profile ---------")
+                    if obj.filtered
+                        disp("---------  Filtered operating times in specific profile ---------")
                         profile = [0; 1; 2; 3; 4; 5; 6];
                         OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);                    
+                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);
                         OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
                         table(profile,OperatingTimeInSec)
-                     end
+                    end
                     
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern(2, 3, fontSize,plotDownSample,downSampleFactor);
@@ -1532,23 +1541,23 @@ classdef instrument < dynamicprops
                                 suptitle(Title);
                             end
                             linkaxes(subplotArray,'x');
-%                             figure();
-%                             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
-%                             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-%                             set(0, 'DefaultAxesFontSize', fontSize);
-%                             
-%                             
-%                             subplotArray(3) =subplot(3,1,3);
-%                             obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
-%                             linkaxes(subplotArray,'x');
-%                             Title = [obj.name newline  '- ' ...
-%                                 datestr(datetime(startTime), ...
-%                                 'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
-%                             try
-%                                 sgtitle(Title,'fontsize',fontSize+2);
-%                             catch
-%                                 suptitle(Title);
-%                             end
+                            %                             figure();
+                            %                             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                            %                             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                            %                             set(0, 'DefaultAxesFontSize', fontSize);
+                            %
+                            %
+                            %                             subplotArray(3) =subplot(3,1,3);
+                            %                             obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                            %                             linkaxes(subplotArray,'x');
+                            %                             Title = [obj.name newline  '- ' ...
+                            %                                 datestr(datetime(startTime), ...
+                            %                                 'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
+                            %                             try
+                            %                                 sgtitle(Title,'fontsize',fontSize+2);
+                            %                             catch
+                            %                                 suptitle(Title);
+                            %                             end
                         end
                         if showGPS == 1 || showGPS == 3
                             figure()
@@ -1589,7 +1598,7 @@ classdef instrument < dynamicprops
                                 disp('PS locations with latitude equal to 0 are not shown but are present in the data')
                             end
                             gx =geoscatter(obj.data(2).values(indexLatNotZero), obj.data(1).values(indexLatNotZero));
-                            gx.MarkerEdgeColor = 'r';  
+                            gx.MarkerEdgeColor = 'r';
                             gx.LineWidth = 3;
                             if min(obj.data(2).values(indexLatNotZero))/max(obj.data(2).values(indexLatNotZero))<0.01
                                 gx.LineWidth = 10;
@@ -1669,11 +1678,11 @@ classdef instrument < dynamicprops
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
-                         indexLatNotZero = obj.data(2).values(:)~=0;
+                        indexLatNotZero = obj.data(2).values(:)~=0;
                         if sum(indexLatNotZero)~= numel(obj.data(2).values(:))
                             disp('PS locations with latitude equal to 0 are not shown but are present in the data')
                         end
-                            
+                        
                         if plotDownSample
                             factor = size(obj.data(2).values(indexLatNotZero),1)/downSampleFactor;
                             plt(obj.data(1).values(indexLatNotZero), obj.data(2).values(indexLatNotZero),'+','downsample',factor);
@@ -1699,13 +1708,13 @@ classdef instrument < dynamicprops
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
-                         indexLatNotZero = obj.data(2).values(:)~=0;
+                        indexLatNotZero = obj.data(2).values(:)~=0;
                         if sum(indexLatNotZero)~= numel(obj.data(2).values(:))
                             disp('PS locations with latitude equal to 0 are not shown but are present in the data')
                         end
-                            
+                        
                         gx =geoscatter(obj.data(2).values(indexLatNotZero), obj.data(1).values(indexLatNotZero));
-                        gx.MarkerEdgeColor = 'r';  
+                        gx.MarkerEdgeColor = 'r';
                         gx.LineWidth = 3;
                         gx.Parent.FontSize =fontSize;
                         geobasemap satellite
@@ -1850,7 +1859,7 @@ classdef instrument < dynamicprops
                 end
             end
             
-            plotJoystick(obj,measureID,startTime,showJoystickPath)
+            plotJoystickPath(obj,measureID,startTime,showJoystickPath)
             
         end
         
@@ -1986,7 +1995,29 @@ classdef instrument < dynamicprops
             ylabel(obj.data(yDataNr).name);
         end
         
-        function plotJoystick(obj,measureID,startTime,showJoystickPath)
+        function plotJoystickSpeedTurn(obj,data,measurementID, title, startTime)
+            time = seconds(0:(numel(data.turn)-1))*0.020 + startTime;
+            fontSize = 20;
+            figure();
+            set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+            set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+            set(0, 'DefaultAxesFontSize', fontSize);
+            subplotArray(1) =  subplot(2,1,1);
+            plot(time, data.turn, 'LineWidth',2)
+            subplotArray(2) =  subplot(2,1,2);
+            plot(time, data.speed, 'LineWidth',2)
+            Title = [title newline  '- ' ...
+                datestr(startTime,'dd/mm/yyyy') ,...
+                ' - Measurement ID: ' num2str(measurementID) ' - '];
+            try
+                sgtitle(Title,'fontsize',fontSize);
+            catch
+                suptitle(Title);
+            end
+            linkaxes(subplotArray,'x');
+        end
+        
+        function plotJoystickPath(obj,measureID,startTime,showJoystickPath)
             
             % --------------------- Joystick path length ----------------------------
             if( isprop(obj,'pathLength'))
@@ -2066,55 +2097,55 @@ classdef instrument < dynamicprops
                 xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
                 linkaxes(subplotArray,'x');
                 
-%                 % differences plots
-%                 subplotArray=[];
-%                 figure();
-%                 set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
-%                 set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
-%                 set(0, 'DefaultAxesFontSize', fontSize);
-%                 
-%                 subplotArray(1) = subplot(3,2,1);
-%                 plot(obj.pathLength.diff1.x,'LineWidth',2 )
-%                 xlim(([1 numel(obj.pathLength.diff1.x)]));
-%                 xlabel('Samples','fontsize',20);
-%                 Title = [datestr(datetime(startTime), ...
-%                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
-%                     'X diff 1' ];
-%                 title(Title,'fontsize',20);
-%                 
-%                 subplotArray(2) = subplot(3,2,2);
-%                 plot(obj.pathLength.diff1.y,'LineWidth',2 )
-%                 xlim(([1 numel(obj.pathLength.diff1.y)]));
-%                 xlabel('Samples','fontsize',20);
-%                 title('Y diff 1','fontsize',fontSize)
-%                 
-%                 % 2th diff
-%                 subplotArray(3) = subplot(3,2,3);
-%                 plot(obj.pathLength.diff2.x,'LineWidth',2 )
-%                 xlim(([1 numel(obj.pathLength.diff2.x)]));
-%                 xlabel('Samples','fontsize',20);
-%                 title('X diff 2','fontsize',fontSize)
-%                 
-%                 subplotArray(4) = subplot(3,2,4);
-%                 plot(obj.pathLength.diff2.y,'LineWidth',2 )
-%                 xlim(([1 numel(obj.pathLength.diff2.y)]));
-%                 xlabel('Samples','fontsize',20);
-%                 title('Y diff 2','fontsize',fontSize)
-%                 
-%                 % 3th diff
-%                 subplotArray(5) = subplot(3,2,5);
-%                 plot(obj.pathLength.diff3.x,'LineWidth',2 )
-%                 xlim(([1 numel(obj.pathLength.diff3.x)]));
-%                 xlabel('Samples','fontsize',20);
-%                 title('X diff 3','fontsize',fontSize)
-%                 
-%                 subplotArray(6) = subplot(3,2,6);
-%                 plot(obj.pathLength.diff3.y,'LineWidth',2 )
-%                 xlim(([1 numel(obj.pathLength.diff3.y)]));
-%                 xlabel('Samples','fontsize',20);
-%                 title('Y diff 3','fontsize',fontSize)
-%                 linkaxes(subplotArray,'x');
-%                 subplotArray=[];
+                %                 % differences plots
+                %                 subplotArray=[];
+                %                 figure();
+                %                 set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
+                %                 set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
+                %                 set(0, 'DefaultAxesFontSize', fontSize);
+                %
+                %                 subplotArray(1) = subplot(3,2,1);
+                %                 plot(obj.pathLength.diff1.x,'LineWidth',2 )
+                %                 xlim(([1 numel(obj.pathLength.diff1.x)]));
+                %                 xlabel('Samples','fontsize',20);
+                %                 Title = [datestr(datetime(startTime), ...
+                %                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
+                %                     'X diff 1' ];
+                %                 title(Title,'fontsize',20);
+                %
+                %                 subplotArray(2) = subplot(3,2,2);
+                %                 plot(obj.pathLength.diff1.y,'LineWidth',2 )
+                %                 xlim(([1 numel(obj.pathLength.diff1.y)]));
+                %                 xlabel('Samples','fontsize',20);
+                %                 title('Y diff 1','fontsize',fontSize)
+                %
+                %                 % 2th diff
+                %                 subplotArray(3) = subplot(3,2,3);
+                %                 plot(obj.pathLength.diff2.x,'LineWidth',2 )
+                %                 xlim(([1 numel(obj.pathLength.diff2.x)]));
+                %                 xlabel('Samples','fontsize',20);
+                %                 title('X diff 2','fontsize',fontSize)
+                %
+                %                 subplotArray(4) = subplot(3,2,4);
+                %                 plot(obj.pathLength.diff2.y,'LineWidth',2 )
+                %                 xlim(([1 numel(obj.pathLength.diff2.y)]));
+                %                 xlabel('Samples','fontsize',20);
+                %                 title('Y diff 2','fontsize',fontSize)
+                %
+                %                 % 3th diff
+                %                 subplotArray(5) = subplot(3,2,5);
+                %                 plot(obj.pathLength.diff3.x,'LineWidth',2 )
+                %                 xlim(([1 numel(obj.pathLength.diff3.x)]));
+                %                 xlabel('Samples','fontsize',20);
+                %                 title('X diff 3','fontsize',fontSize)
+                %
+                %                 subplotArray(6) = subplot(3,2,6);
+                %                 plot(obj.pathLength.diff3.y,'LineWidth',2 )
+                %                 xlim(([1 numel(obj.pathLength.diff3.y)]));
+                %                 xlabel('Samples','fontsize',20);
+                %                 title('Y diff 3','fontsize',fontSize)
+                %                 linkaxes(subplotArray,'x');
+                %                 subplotArray=[];
             end
             
             % --------------------- Filtered joystick path length ----------------------------
@@ -2196,6 +2227,7 @@ classdef instrument < dynamicprops
             end
             
         end
+        
         
         %%  Joystick functions
         function obj  = joystickPathLength(obj)
