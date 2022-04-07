@@ -502,6 +502,12 @@ classdef measurement < dynamicprops
             
             
             obj.instruments(i) = obj.instruments(i).add_data( int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1, dataset,addDistSubs);
+            % split attendant control
+            if sum(obj.instruments(i).datatype == (160:163))>0
+                obj.splitAttendantUsage(1,int64(obj.dataset_list.cyclecounter)-obj.start_cycleCount+1);
+            end
+            
+            
             % RAM memory usage
             if  obj.enableStoreMemory
                 [user,sys] = memory;
@@ -679,6 +685,7 @@ classdef measurement < dynamicprops
             mobj = obj;
             mobj.conn = [];
         end
+        
         function  extractionData(obj)
             %Each sensor data will be exported to the workspace.
             %The name of the variables will be in the following format:
@@ -791,8 +798,8 @@ classdef measurement < dynamicprops
             end
             
             
-            % Fix for incorrect timestamp between 00:00 and 03:00
-            trialTable.timestamp(trialTable.timestamp<hours(3)) = trialTable.timestamp(trialTable.timestamp<hours(3)) + hours(20);
+            % Fix for incorrect timestamp between 00:00 and 06:00
+            trialTable.timestamp(trialTable.timestamp<hours(6)) = trialTable.timestamp(trialTable.timestamp<hours(6)) + hours(20);
             trialTable = sortrows(trialTable,1);
             
             % check on unique cycles
@@ -846,7 +853,7 @@ classdef measurement < dynamicprops
                     obj = obj.splitActuatorUsage(cyclecounter_list);
                 end
                 if splitAttendant
-                    obj = obj.splitAttendantUsage(cyclecounter_list);
+                    obj = obj.splitAttendantUsage(1,cyclecounter_list);
                 end
                 
                 obj.instruments(1).addprop('extracted');
@@ -857,7 +864,7 @@ classdef measurement < dynamicprops
                     obj = obj.splitActuatorUsage(cyclecounter_list);
                 end
                 if splitAttendant
-                    obj = obj.splitAttendantUsage(cyclecounter_list);
+                    obj = obj.splitAttendantUsage(1,cyclecounter_list);
                 end
                 obj.instruments(1).addprop('extracted');
                 obj.instruments(1).extracted = true;
@@ -881,16 +888,16 @@ classdef measurement < dynamicprops
             obj.instruments(3).extracted = true;
         end
         
-        function obj = splitAttendantUsage(obj,cyclecounter_list)
-            if ~isempty(obj.instruments(1).data(4).values)
-                attendantInControlArray = obj.instruments(1).data(4).values == 6;
+        function obj = splitAttendantUsage(obj,instrumentNr,cyclecounter_list)
+            if ~isempty(obj.instruments(instrumentNr).data(4).values)
+                attendantInControlArray = obj.instruments(instrumentNr).data(4).values == 6;
                 
                 % This function copy joystick data to new actuatorMode
                 % sturcture inside instruments when actuator mode
                 % equals 1 and sets the corresponding data in de turn
                 % and speed to zero
                 if sum(attendantInControlArray) ~=0
-                    obj.instruments(1) = obj.instruments(1).createAttendantControl(cyclecounter_list,attendantInControlArray);
+                    obj.instruments(instrumentNr) = obj.instruments(instrumentNr).createAttendantControl(cyclecounter_list,attendantInControlArray);
                 else
                     warning("No attendant control during the measurement");
                 end
@@ -899,15 +906,28 @@ classdef measurement < dynamicprops
         end
         function obj = splitActuatorUsage(obj,cyclecounter_list)
             if ~isempty(obj.instruments(1).data(1).values)
-                actuatorControlArray = obj.instruments(1).data(1).values == 1;
+                actuatorControlArray = find(obj.instruments(1).data(1).values == 0);
                 
                 % This function copy joystick data to new actuatorMode
                 % sturcture inside instruments when actuator mode
                 % equals 1 and sets the corresponding data in de turn
                 % and speed to zero
-                obj.instruments(1) = obj.instruments(1).createActuatorControl(cyclecounter_list,actuatorControlArray);
+                if ~isempty(actuatorControlArray)
+                    obj.instruments(1) = obj.instruments(1).createActuatorControl(actuatorControlArray);
+                end
             end
             
+        end
+        
+        function obj = matImportSplitAttendant(obj)
+           % split attendant control
+           for i = 1: obj.n_instruments               
+               if sum(obj.instruments(i).datatype == (160:163))>0
+                   obj.splitAttendantUsage(1,isnan(obj.instruments(i).data(1).values));
+               end
+           end
+           
+             
         end
         %% *********************** SD card data ***********************
         function obj = get_measurement_fromSD(obj)

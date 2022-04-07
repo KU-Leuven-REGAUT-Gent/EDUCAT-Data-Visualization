@@ -97,6 +97,10 @@ classdef data
             obj.values(cyclecounter_list) = data;
         end
         
+        function obj = clear_value(obj)
+            obj.values = NaN(numel(obj.values),1);
+        end
+        
         function obj = remove_value(obj,cyclecounter_list)
 
             obj.values= obj.values(cyclecounter_list);
