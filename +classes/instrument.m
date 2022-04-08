@@ -885,9 +885,9 @@ classdef instrument < dynamicprops
                 %active
                 obj.data(2).values(attendantInControlArray) = nan;
                 obj.data(3).values(attendantInControlArray) = nan;
-
+                cycleCounterList = ~isnan(obj.data(2).values);
                 % recalculate the operation time, operated and bauts
-                obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cyclecounter_list);
+                obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cycleCounterList);
             end
         end
         %%  *************** plot function *******************
@@ -946,8 +946,9 @@ classdef instrument < dynamicprops
                         subplotArray(1) = subplot(2,1,1);
                         p=obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         p.Marker= '*';
-                        text(startTime+ seconds(1),0.5, "Operating time: " + round(obj.actuatorControl.operatingTime,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
-                        
+                        if isprop(obj,'actuatorControl') && ~isempty(obj.actuatorControl.operatingTime)
+                            text(startTime+ seconds(1),0.5, "Operating time: " + round(obj.actuatorControl.operatingTime,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
+                        end
                         subplotArray(2) = subplot(2,1,2);
                         obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
                         Title = [obj.name newline  '- ' ...

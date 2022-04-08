@@ -890,7 +890,7 @@ classdef measurement < dynamicprops
         
         function obj = splitAttendantUsage(obj,instrumentNr,cyclecounter_list)
             if ~isempty(obj.instruments(instrumentNr).data(4).values)
-                attendantInControlArray = obj.instruments(instrumentNr).data(4).values == 6;
+                attendantInControlArray = find(obj.instruments(instrumentNr).data(4).values == 6);
                 
                 % This function copy joystick data to new actuatorMode
                 % sturcture inside instruments when actuator mode
