@@ -777,7 +777,7 @@ classdef measurement < dynamicprops
             warning off ;
             trialTable= readtable([files(1).folder '\' files(1).name]);
             trialTable(1,:) = [];
-            
+            trialTable.fileID = ones(size(trialTable,1),1);
             if numel(files)>1
                 for i=2:numel(files)
 %                     fileID = fopen([files(i).folder '\' files(i).name],'r');                  
@@ -787,7 +787,9 @@ classdef measurement < dynamicprops
                         tempTable= readtable([files(i).folder '\' files(i).name]);
                         if numel(tempTable) >0
                             tempTable(1,:) = [];
+                            tempTable.fileID = ones(size(tempTable,1),1)*i;
                             trialTable=[trialTable;tempTable ];
+                            
                         end
 %                     end
                 end
@@ -810,7 +812,10 @@ classdef measurement < dynamicprops
             idxkeep = count(idxcount)>1;
             % Extract from C
             if numel(trialTable.timestamp(idxkeep,:))>0
-                error('There are double measurement on cycles')
+                duplicatedMeasurementFiles = {files(unique(trialTable.fileID(idxkeep,:))).name};
+                fileNames = cellfun(@(x) strcat(string(x), ' and '),{duplicatedMeasurementFiles{1:end-1}});
+                fileNames(end+1) = duplicatedMeasurementFiles{end};
+                error("There are  measurements with the same timestamp. The sensor data can be different." + newline + "The wrong measurements can be found in the following csv files: " + newline+ strjoin(fileNames))
             end
             
             obj.start_time = datetime(dString,'InputFormat','yyMMdd','TimeZone','local')+ trialTable.timestamp(2);
