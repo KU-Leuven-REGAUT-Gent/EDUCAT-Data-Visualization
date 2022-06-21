@@ -110,10 +110,11 @@ classdef data
             obj.values(cyclecounter) = data;
         end
         
-        function obj = resize(obj)
-            %obj.value = obj.value;
+        function obj = resize(obj,startID,endID)
+            obj.values = obj.values(startID:endID);
         end
-        function p = plot(obj,startTime,enableTitle,enableXlabel,yEnLim,plotDownSample,downSampleFactor)
+        
+        function p = plot(obj,startTime,enableTitle,enableXlabel,yEnLim,plotDownSample,downSampleFactor,fontSize)
             time = seconds(0:(size(obj.values,1)-1))*0.020 + startTime;
              if plotDownSample
                 factor = size(obj.values,1)/downSampleFactor;
@@ -129,7 +130,7 @@ classdef data
                 end
              end
             if enableTitle
-                title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',20);
+                title([char(obj.name) ' [' char(obj.unit) ']'],'fontsize',fontSize);
             end
             if yEnLim && obj.datatype ~= 0
                 ylim([min([-0.1; obj.values],[],'all')*1.1 (1.1*max([obj.values;0.1],[],'all'))]);
@@ -139,7 +140,7 @@ classdef data
             xlim(([min(time) (max(time))]));
             if enableXlabel
                 tzOffset = tzoffset(startTime);
-                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
             end
             if strlength(char(obj.name))> 30
                 yText = split(extractAfter(char(obj.name),strlength(char(obj.name))/2),['-',' ']);
@@ -147,7 +148,7 @@ classdef data
             else
                 yText = char(obj.name);
             end
-            ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
+            ylabel([yText ' [' char(obj.unit) ']'],'fontsize',fontSize);
         end
     end
 end

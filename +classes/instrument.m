@@ -17,7 +17,7 @@ classdef instrument < dynamicprops
             lengthData
     end
     properties (Hidden)
-        filtered
+        filterSetting
     end
     methods
         %%  *************** constructor *******************
@@ -33,6 +33,7 @@ classdef instrument < dynamicprops
             obj.name = name;
             obj.description = description;
             obj.datatype = datatype;
+%             obj.filterSetting.executed = false; 
             
             switch obj.datatype
                 case 160 % TRIAL 1 JOYSTICK
@@ -341,18 +342,45 @@ classdef instrument < dynamicprops
         end
         
         function obj = joystickCalculations(obj,startIndexInstrument,blobTurn,blobSpeed,cyclecounter_list)
+            % resize and clear data Operated bit
+            if length(obj.data(startIndexInstrument).values)>1 && sum(isnan(obj.data(startIndexInstrument).values)) < length(obj.data(startIndexInstrument).values)
+                obj.data(startIndexInstrument) = obj.data(startIndexInstrument).resize(1,length(blobTurn));
+                obj.data(startIndexInstrument) = obj.data(startIndexInstrument).clear_value();
+            end
+             % resize and clear Bouts   
+            if length(obj.data(startIndexInstrument+1).values)>1 && sum(isnan(obj.data(startIndexInstrument+1).values)) < length(obj.data(startIndexInstrument+1).values)
+                obj.data(startIndexInstrument+1) = obj.data(startIndexInstrument+1).resize(1,length(cyclecounter_list));
+                obj.data(startIndexInstrument+1) = obj.data(startIndexInstrument+1).clear_value();
+            end
             % operated bit
-            blobTurn(isnan(blobTurn)) = []; % remove all NaN otherwise incorrect Operated bit and all other calculations
-            blobSpeed(isnan(blobSpeed)) = [];
-            obj.data(startIndexInstrument) = obj.data(startIndexInstrument).clear_value();
-            obj.data(startIndexInstrument) = obj.data(startIndexInstrument).add_value(cyclecounter_list, blobTurn ~= 0 | blobSpeed ~= 0);
-            flankDet = [obj.data(startIndexInstrument).values ;0]- [0; obj.data(startIndexInstrument).values];
-            % Bouts calculation
-            obj.data(startIndexInstrument+1) = obj.data(startIndexInstrument+1).clear_value();
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             
+            % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+            
+            startZeroID = startZeroID(zeroCrossingIDs);
+            endZeroID =  endZeroID(zeroCrossingIDs)-1;
+            
+            for i = 1: numel(startZeroID)
+                blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+            end
+                        
+         
+            % calculate operated bit
+            operatedBit  = zeros(numel(blobTurn),0);
+            operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+            obj.data(startIndexInstrument) = obj.data(startIndexInstrument).add_value(cyclecounter_list,operatedBit(measuredCyclesIDs));
+  
+            % Bouts calculation       
+            flankDet = [operatedBit ;0]- [0; operatedBit];
+                
             obj.data(startIndexInstrument+1) = obj.data(startIndexInstrument+1).add_value(1,sum(flankDet(flankDet>0)));
+            
             % Operating time
+%             obj.data(startIndexInstrument+2) = obj.data(startIndexInstrument+2).resize(1,length(cyclecounter_list));
             obj.data(startIndexInstrument+2) = obj.data(startIndexInstrument+2).clear_value();
-            obj.data(startIndexInstrument+2) = obj.data(startIndexInstrument+2).filteredData(1,sum(rmmissing(obj.data(startIndexInstrument).values))*0.02);
+            obj.data(startIndexInstrument+2) = obj.data(startIndexInstrument+2).filteredData(1,(sum(obj.data(startIndexInstrument).values(measuredCyclesIDs))-1)*0.02);
         end
         
         %%  *************** remove data function *******************
@@ -365,18 +393,89 @@ classdef instrument < dynamicprops
                     obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
                     obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
                     obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    % recalculate bouts and operation time 
                     flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
                     obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        obj.data(8) = obj.data(8).remove_value(cyclecounter_Keeplist);   
+                        obj.data(9) = obj.data(9).remove_value(cyclecounter_Keeplist);   
+                        obj.data(10) = obj.data(10).remove_value(cyclecounter_Keeplist);   
+                        
+                        % recalculate bouts and operation time 
+                        flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
+                        obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
+                        obj.data(12) = obj.data(12).filteredData(1,sum(rmmissing(obj.data(10).values))*0.02);
+                    end
+                    if isprop(obj,'actuatorControl')
+                        obj.actuatorControl.turn = obj.actuatorControl.turn.remove_value(cyclecounter_Keeplist);
+                        obj.actuatorControl.speed = obj.actuatorControl.speed.remove_value(cyclecounter_Keeplist);
+                        obj.actuatorControl.profile = obj.actuatorControl.profile.remove_value(cyclecounter_Keeplist);
+                        actuatorControlArray = find(obj.data(1).values == 0);
+                        if sum(actuatorControlArray)==0
+                             delete(obj.findprop('actuatorControl'));
+                        else
+                            obj.calculateActuatorOperatingTime(actuatorControlArray,obj.actuatorControl.turn.values,obj.actuatorControl.speed.values);
+                             if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                                obj.actuatorControl.filtered.turn = obj.actuatorControl.filtered.turn.remove_value(cyclecounter_Keeplist);
+                                obj.actuatorControl.filtered.speed = obj.actuatorControl.filtered.speed.remove_value(cyclecounter_Keeplist);
+                                obj.calculateFilteredactuatorOperatingTime(actuatorControlArray,obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values);
+                            end
+                        end
+                    end                                
+     
+                    if isprop(obj,'attendantControl')
+                        obj.attendantControl.turn = obj.attendantControl.turn.remove_value(cyclecounter_Keeplist);
+                        obj.attendantControl.speed = obj.attendantControl.speed.remove_value(cyclecounter_Keeplist);
+                        attendantInControlArray = ~isnan(obj.attendantControl.turn.values) & ~isnan(obj.attendantControl.speed.values);
+                        if sum(attendantInControlArray)==0
+                            delete(obj.findprop('attendantControl'));
+                        else
+                            obj.calculateAttendantOperatingTime(attendantInControlArray,obj.attendantControl.turn.values,obj.attendantControl.speed.values);
+                            if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                                obj.attendantControl.filtered.turn = obj.attendantControl.filtered.turn.remove_value(cyclecounter_Keeplist);
+                                obj.attendantControl.filtered.speed = obj.attendantControl.filtered.speed.remove_value(cyclecounter_Keeplist);
+                                obj.calculateFilteredAttendantOperatingTime(attendantInControlArray,obj.attendantControl.filtered.turn.values,obj.attendantControl.filtered.speed.values);
+                            end
+                        end
+                    end
+                         % recalculate the operation time, operated and bauts
+%                     if sum(~isnan(obj.data(2).values))>0 && sum (~isnan(obj.data(3).values))>0 
+%                         cycleCounterList = find(~isnan(obj.data(2).values) | ~isnan(obj.data(3).values));
+%                         obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cycleCounterList);
+%                     end   
                 case 161 % A1
                     obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                     obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
                     obj.data(3) = obj.data(3).remove_value(cyclecounter_Keeplist);
                     obj.data(4) = obj.data(4).remove_value(cyclecounter_Keeplist);
                     obj.data(5) = obj.data(5).remove_value(cyclecounter_Keeplist);
+                    % recalculate bouts and operation time 
                     flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
                     obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        obj.data(8) = obj.data(8).remove_value(cyclecounter_Keeplist);   
+                        obj.data(9) = obj.data(9).remove_value(cyclecounter_Keeplist);   
+                        obj.data(10) = obj.data(10).remove_value(cyclecounter_Keeplist);   
+                        
+                        % recalculate bouts and operation time 
+                        flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
+                        obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
+                        obj.data(12) = obj.data(12).filteredData(1,sum(rmmissing(obj.data(10).values))*0.02);
+                    end
+                    
+                    if isprop(obj,'attendantControl')
+                        obj.attendantControl.turn = obj.attendantControl.turn.remove_value(cyclecounter_Keeplist);
+                        obj.attendantControl.speed = obj.attendantControl.speed.remove_value(cyclecounter_Keeplist);
+                        attendantInControlArray = find(obj.data(4).values == 6);
+                        if sum(attendantInControlArray)==0
+                             delete(obj.findprop('attendantControl'));
+                        else
+                            obj.calculateAttendantOperatingTime(attendantInControlArray,obj.attendantControl.turn.values,obj.attendantControl.speed.values);
+                        end
+                    end
                 case 162 % A2
                     obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                     obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
@@ -387,6 +486,28 @@ classdef instrument < dynamicprops
                     flankDet = [obj.data(6).values ;0]- [0; obj.data(6).values];
                     obj.data(7) = obj.data(7).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(8) = obj.data(8).filteredData(1,sum(rmmissing(obj.data(6).values))*0.02);
+                    
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        obj.data(9) = obj.data(9).remove_value(cyclecounter_Keeplist);   
+                        obj.data(10) = obj.data(10).remove_value(cyclecounter_Keeplist);   
+                        obj.data(11) = obj.data(11).remove_value(cyclecounter_Keeplist);   
+                        
+                        % recalculate bouts and operation time 
+                        flankDet = [obj.data(11).values ;0]- [0; obj.data(11).values];
+                        obj.data(12) = obj.data(12).add_value(1,sum(flankDet(flankDet>0)));
+                        obj.data(13) = obj.data(13).filteredData(1,sum(rmmissing(obj.data(11).values))*0.02);
+                    end
+                    
+                    if isprop(obj,'attendantControl')
+                        obj.attendantControl.turn = obj.attendantControl.turn.remove_value(cyclecounter_Keeplist);
+                        obj.attendantControl.speed = obj.attendantControl.speed.remove_value(cyclecounter_Keeplist);
+                        attendantInControlArray = find(obj.data(4).values == 6);
+                        if sum(attendantInControlArray)==0
+                             delete(obj.findprop('attendantControl'));
+                        else
+                            obj.calculateAttendantOperatingTime(attendantInControlArray,obj.attendantControl.turn.values,obj.attendantControl.speed.values);
+                        end
+                    end
                 case 163 % A3
                     obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                     obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
@@ -396,6 +517,28 @@ classdef instrument < dynamicprops
                     flankDet = [obj.data(5).values ;0]- [0; obj.data(5).values];
                     obj.data(6) = obj.data(6).add_value(1,sum(flankDet(flankDet>0)));
                     obj.data(7) = obj.data(7).filteredData(1,sum(rmmissing(obj.data(5).values))*0.02);
+                    
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        obj.data(8) = obj.data(8).remove_value(cyclecounter_Keeplist);   
+                        obj.data(9) = obj.data(9).remove_value(cyclecounter_Keeplist);   
+                        obj.data(10) = obj.data(10).remove_value(cyclecounter_Keeplist);   
+                        
+                        % recalculate bouts and operation time 
+                        flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
+                        obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
+                        obj.data(12) = obj.data(12).filteredData(1,sum(rmmissing(obj.data(10).values))*0.02);
+                    end
+                    
+                    if isprop(obj,'attendantControl')
+                        obj.attendantControl.turn = obj.attendantControl.turn.remove_value(cyclecounter_Keeplist);
+                        obj.attendantControl.speed = obj.attendantControl.speed.remove_value(cyclecounter_Keeplist);
+                        attendantInControlArray = find(obj.data(4).values == 6);
+                        if sum(attendantInControlArray)==0
+                             delete(obj.findprop('attendantControl'));
+                        else
+                            obj.calculateAttendantOperatingTime(attendantInControlArray,obj.attendantControl.turn.values,obj.attendantControl.speed.values);
+                        end
+                    end
                 case 176 % B0 TRIAL 1 IMU
                     obj.data(1) = obj.data(1).remove_value(cyclecounter_Keeplist);
                     obj.data(2) = obj.data(2).remove_value(cyclecounter_Keeplist);
@@ -505,34 +648,7 @@ classdef instrument < dynamicprops
             end
         end
         
-        %% ***************Filtering *******************
-        function filterID  = removeConsecutiveZeros(obj,startIndex)
-            
-           % remove more than 3 consecutive [0,0] from the turn and speed
-            noMovementID = obj.data(startIndex).values == 0 & obj.data(startIndex+1).values ==0;           
-            diffNoMovement = [0; diff(noMovementID)];
-             
-            startZeroID = find(diffNoMovement==1);
-            endZeroID = find(diffNoMovement==-1);
-            
-            if ~isempty(endZeroID) && ~isempty(startZeroID) && endZeroID(1)< startZeroID(1)
-                startZeroID = [1; startZeroID];
-            end
-            if ~isempty(endZeroID) && ~isempty(startZeroID) && endZeroID(end)< startZeroID(end)
-                endZeroID(end+1) = length(noMovementID);
-            end
-            removeZeroID = (endZeroID - startZeroID)<=3;
-            startZeroID(removeZeroID) = [];
-            endZeroID(removeZeroID) = [];
-            
-            startZeroID = startZeroID+1;
-            endZeroID = endZeroID-2;
-            filterID = ones(numel(obj.data(startIndex).values),1);
-            for i = 1: numel(startZeroID)
-                filterID(startZeroID(i):endZeroID(i)) = 0;
-            end 
-        end
-        
+        %% ***************Filtering *******************        
         function obj = filter(obj,deadZone,FilterUnit)
             switch obj.datatype
                 case 160 % A0 TRIAL 1 JOYSTICK
@@ -550,47 +666,20 @@ classdef instrument < dynamicprops
                         filter = obj.removeConsecutiveZeros(2);
                         filter = filter & (abs(obj.data(2).values)>= deadZone | abs(obj.data(3).values)>= deadZone);
                     end
-                    
+                
                     if  sum(filter)>0
-                        if FilterUnit % percentage
-                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
-                        else  % value
-                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                        end
-                        
-                        if( ~isprop(obj,'filterSetting'))
-                            obj.addprop('filterSetting');
-                        end
+                        obj.filterSetting.startID = 8;                        
                         obj.filterSetting.deadZone = deadZone;
                         if FilterUnit % percentage
                             obj.filterSetting.unit = "%";
                         else % value
                             obj.filterSetting.unit = "bit(s)";
-                        end
+                        end                                               
                     else
-                        obj.filtered = false;
+                        obj.filterSetting.executed = false;
                         return;
-                    end
-                    
-                    turn = obj.data(2).values(filter);
-                    speed = obj.data(3).values(filter);
-                    cycle = find(filter);
-                    obj.data(10) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(12) = classes.data("Filt. operating time","s","float_64",1);
-                    % filtering Turn and speed
-                    
-                    obj.data(8) = obj.data(8).filteredData(cycle, turn);
-                    obj.data(9) = obj.data(9).filteredData(cycle, speed);
-                    
-                    % Calculate operated bit and baud
-                    obj.data(10) = obj.data(10).add_value(1:size(obj.data(3).values,1), (obj.data(8).values ~= 0 & ~isnan(obj.data(8).values))| (obj.data(9).values ~= 0& ~isnan(obj.data(9).values)));
-                    flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
-                    obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
-                    
+                    end     
+         
                 case 161 % A1 JOYSTICK_DX2_OUTPUT
                     R= 128;
                     % declaration of filtered data
@@ -603,18 +692,10 @@ classdef instrument < dynamicprops
                         filter = filter & (abs(obj.data(2).values)>= deadZone | abs(obj.data(3).values)>= deadZone);
                     end
                     
+                                     
+                    
                     if  sum(filter)>0
-                        if FilterUnit % percentage
-                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
-                        else  % value
-                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                        end
-                        
-                        if( ~isprop(obj,'filterSetting'))
-                            obj.addprop('filterSetting');
-                        end
+                        obj.filterSetting.startID = 8;
                         obj.filterSetting.deadZone = deadZone;
                         if FilterUnit % percentage
                             obj.filterSetting.unit = "%";
@@ -622,26 +703,10 @@ classdef instrument < dynamicprops
                             obj.filterSetting.unit = "bit(s)";
                         end
                     else
-                        obj.filtered = false;
+                        obj.filterSetting.executed = false;
                         return;
                     end
-                    
-                    turn = obj.data(2).values(filter);
-                    speed = obj.data(3).values(filter);
-                    cycle = find(filter);
-                    obj.data(10) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(12) = classes.data("Filt. operating time","s","float_64",1);
-                    % filtering Turn and speed
-                    obj.data(8) = obj.data(8).filteredData(cycle, turn);
-                    obj.data(9) = obj.data(9).filteredData(cycle, speed);
-                    
-                    % Calculate operated bit and baud
-                    obj.data(10) = obj.data(10).add_value(1:size(obj.data(3).values,1), (obj.data(8).values ~= 0 & ~isnan(obj.data(8).values))| (obj.data(9).values ~= 0& ~isnan(obj.data(9).values)));
-                    flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
-                    obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
-                    
+                                        
                 case 162 % A2 JOYSTICK_PG_OUTPUT
                     R = 100;
                     % declaration of filtered data
@@ -652,18 +717,9 @@ classdef instrument < dynamicprops
                         filter = obj.removeConsecutiveZeros(2);
                         filter = filter & (abs(obj.data(2).values)>= deadZone | abs(obj.data(3).values)>= deadZone);
                     end
-                    
+                                        
                     if sum(filter)>0
-                        if FilterUnit % percentage
-                            obj.data(9) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(10) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                        else % value
-                            obj.data(9) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(10) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                        end
-                        if( ~isprop(obj,'filterSetting'))
-                            obj.addprop('filterSetting');
-                        end
+                        obj.filterSetting.startID = 9;
                         obj.filterSetting.deadZone = deadzone;
                         if FilterUnit % percentage
                             obj.filterSetting.unit = "%";
@@ -671,26 +727,9 @@ classdef instrument < dynamicprops
                             obj.filterSetting.unit = "bit(s)";
                         end
                     else
-                        obj.filtered = false;
+                        obj.filterSetting.executed = false;
                         return;
                     end
-                    
-                    turn = obj.data(2).values(filter);
-                    speed = obj.data(3).values(filter);
-                    cycle = find(filter);
-                    
-                    obj.data(11) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(12) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(13) = classes.data("Filt. operating time","s","float_64",1);
-                    % filtering Turn and speed
-                    obj.data(9) = obj.data(9).filteredData(cycle, turn);
-                    obj.data(10) = obj.data(10).filteredData(cycle, speed);
-                    % Calculate operated bit and baud
-                    obj.data(11) = obj.data(11).add_value(1:size(obj.data(3).values,1), (obj.data(9).values ~= 0 & ~isnan(obj.data(9).values))| (obj.data(10).values ~= 0& ~isnan(obj.data(10).values)));
-                    flankDet = [obj.data(11).values ;0]- [0; obj.data(11).values];
-                    obj.data(12) = obj.data(12).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(13) = obj.data(13).filteredData(1,sum(obj.data(11).values)*0.02);
-                    
                 case 163 % A3 JOYSTICK_LINX_OUTPUT
                     R = 128;
                     
@@ -702,19 +741,9 @@ classdef instrument < dynamicprops
                         filter = filter & (abs(obj.data(2).values)>= deadZone | abs(obj.data(3).values)>= deadZone);
                     end
                     
+                    
                     if sum(filter)>0
-                        % declaration of filtered data
-                        
-                        if FilterUnit % percentage
-                            obj.data(8) = classes.data("Turn (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (" + deadZone + "%)" ,"filt.","int_8",size(obj.data(3).values,1));
-                        else % value
-                            obj.data(8) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                            obj.data(9) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
-                        end
-                        if( ~isprop(obj,'filterSetting'))
-                            obj.addprop('filterSetting');
-                        end
+                        obj.filterSetting.startID = 8;  
                         obj.filterSetting.deadZone = deadzone;
                         if FilterUnit % percentage
                             obj.filterSetting.unit = "%";
@@ -723,29 +752,112 @@ classdef instrument < dynamicprops
                         end
                         
                     else
-                        obj.filtered = false;
+                        obj.filterSetting.executed = false;
                         return
-                    end
-                    
-                    turn = obj.data(2).values(filter);
-                    speed = obj.data(3).values(filter);
-                    cycle = find(filter);
-                    
-                    obj.data(10) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
-                    obj.data(11) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
-                    obj.data(12) = classes.data("Filt. operating time","s","float_64",1);
-                    % filtering Turn and speed
-                    obj.data(8) = obj.data(8).filteredData(cycle, turn);
-                    obj.data(9) = obj.data(9).filteredData(cycle, speed);
-                    % Calculate operated bit and baud
-                    obj.data(10) = obj.data(10).add_value(1:size(obj.data(3).values,1), (obj.data(8).values ~= 0 & ~isnan(obj.data(8).values))| (obj.data(9).values ~= 0& ~isnan(obj.data(9).values)));
-                    flankDet = [obj.data(10).values ;0]- [0; obj.data(10).values];
-                    obj.data(11) = obj.data(11).add_value(1,sum(flankDet(flankDet>0)));
-                    obj.data(12) = obj.data(12).filteredData(1,sum(obj.data(10).values)*0.02);
+                    end                    
                 otherwise
                     warning("Not yet programmed");
+                    return;
             end
-            obj.filtered = true;
+            
+            
+            turnID = obj.filterSetting.startID;
+            speedID= obj.filterSetting.startID +1;
+            operatedID= obj.filterSetting.startID +2;
+            boutsID = obj.filterSetting.startID +3;
+            operatingTime = obj.filterSetting.startID +4;    
+            
+            if FilterUnit % percentage
+                obj.data(turnID ) = classes.data("Turn (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
+                obj.data(speedID) = classes.data("Speed (" + deadZone + "%)" ,"filt. %","int_8",size(obj.data(3).values,1));
+            else  % value
+                obj.data(turnID) = classes.data("Turn (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+                obj.data(speedID) = classes.data("Speed (>" + deadZone + ")" ,"filt.","int_8",size(obj.data(3).values,1));
+            end                   
+
+            obj.data(operatedID) = classes.data("Filt. operated","bit","boolean",size(obj.data(3).values,1));
+            obj.data(boutsID) = classes.data("Filt. bouts","bouts/measurement","boolean",1);
+            obj.data(operatingTime) = classes.data("Filt. operating time","s","float_64",1);
+
+            cycle = find(filter);
+            % filtering Turn and speed                    
+            obj.data(turnID ) = obj.data(turnID).filteredData(cycle, obj.data(2).values(filter));
+            obj.data(speedID) = obj.data(speedID).filteredData(cycle, obj.data(3).values(filter));
+
+            % cycleCounter = 1:size(obj.data(turnID).values,1);
+            cycleCounterList = find(~isnan(obj.data(turnID).values) | ~isnan(obj.data(speedID).values));
+            obj.joystickCalculations(operatedID,obj.data(turnID).values,obj.data(speedID).values,cycleCounterList);
+            if isprop(obj,'attendantControl')
+                if FilterUnit % percentage
+                    filter = obj.removeStructureConsecutiveZeros(obj.attendantControl);
+                    filter = filter & (abs(obj.attendantControl.turn.values)>= R*deadZone/100 | abs(obj.attendantControl.speed.values)>= R*deadZone/100);
+                else  % value
+                    filter = obj.removeStructureConsecutiveZeros(obj.attendantControl);
+                    filter = filter & (abs(obj.attendantControl.turn.values)>= deadZone | abs(obj.attendantControl.speed.values)>= deadZone);
+                end
+                filteredAttendantInControlArray = find(filter);
+                obj.createFilteredAttendantControl(filteredAttendantInControlArray);
+            end
+            if isprop(obj,'actuatorControl')
+                if FilterUnit % percentage
+                    filter = obj.removeStructureConsecutiveZeros(obj.actuatorControl);
+                    filter = filter & (abs(obj.actuatorControl.turn.values)>= R*deadZone/100 | abs(obj.actuatorControl.speed.values)>= R*deadZone/100);
+                else  % value
+                    filter = obj.removeStructureConsecutiveZeros(obj.actuatorControl);
+                    filter = filter & (abs(obj.actuatorControl.turn.values)>= deadZone | abs(obj.actuatorControl.speed.values)>= deadZone);
+                end
+                filteredActuatorInControlArray = find(filter);
+                obj.createFilteredActuatorControl(filteredActuatorInControlArray);
+            end
+            obj.filterSetting.executed = true;
+        end
+        
+        %%  *************** zero crossing function *******************
+        function filterID  = removeConsecutiveZeros(obj,startIndex)
+            % remove more than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,obj.data(startIndex).values,obj.data(startIndex+1).values);
+            
+            startZeroID(zeroCrossingIDs) = [];
+            endZeroID(zeroCrossingIDs) = [];
+            
+            startZeroID = startZeroID+1;
+            endZeroID = endZeroID-2;
+            
+            filterID = ones(numel(obj.data(startIndex).values),1);
+            for i = 1: numel(startZeroID)
+                filterID(startZeroID(i):endZeroID(i)) = 0;
+            end
+        end
+        function filterID  = removeStructureConsecutiveZeros(obj,specificJoystickData)
+            % remove more than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,specificJoystickData.turn.values,specificJoystickData.turn.values);
+            
+            startZeroID(zeroCrossingIDs) = [];
+            endZeroID(zeroCrossingIDs) = [];
+            
+            startZeroID = startZeroID+1;
+            endZeroID = endZeroID-2;
+            
+            filterID = ones(numel(obj.attendantControl.turn.values),1);
+            for i = 1: numel(startZeroID)
+                filterID(startZeroID(i):endZeroID(i)) = 0;
+            end
+        end
+        function [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,turn,speed)
+            % Detect less or equal than 3 consecutive [0,0] from the turn and speed
+            noMovementID = (turn == 0 & speed ==0) | (isnan(turn) & isnan(speed));           
+            diffNoMovement = [0; diff(noMovementID)]; 
+            
+            startZeroID = find(diffNoMovement==1);
+            endZeroID = find(diffNoMovement==-1);
+            
+            if ~isempty(endZeroID) && ~isempty(startZeroID) && endZeroID(1)< startZeroID(1)
+                startZeroID = [1; startZeroID];
+            end
+            if ~isempty(endZeroID) && ~isempty(startZeroID) && endZeroID(end)< startZeroID(end)
+                endZeroID(end+1) = length(noMovementID);
+            end
+            zeroCrossingIDs = (endZeroID - startZeroID)<=3;            
         end
         
         %%  *************** export function *******************
@@ -773,6 +885,7 @@ classdef instrument < dynamicprops
                 case 242 % F2
             end
         end
+        
         %%  *************** Import Trial 1 Instrument *******************
         function obj = importTrial1Instrument(obj,cyclecounter_list,trialData)
             switch obj.datatype
@@ -816,6 +929,8 @@ classdef instrument < dynamicprops
                     error("Datatype unsupported");
             end
         end
+        
+        %%  *************** Actuator control *******************
         function obj = createActuatorControl(obj,actuatorControlArray)
             % Create actuatorControl structure
             % Copy the joystick data when actuator mode equals 1
@@ -852,25 +967,113 @@ classdef instrument < dynamicprops
                 obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cycleCounterList);
             end
             obj.calculateActuatorOperatingTime(actuatorControlArray,obj.actuatorControl.turn.values,obj.actuatorControl.speed.values);
-        end
-        
+        end        
         
         function obj = calculateActuatorOperatingTime(obj,actuatorControlArray,blobTurn,blobSpeed)
-%             actuator.operated = nan(1,numel(blobTurn));
-%             blobTurn(isnan(blobTurn)) = []; % remove all NaN otherwise incorrect Operated bit and all other calculations
-%             blobSpeed(isnan(blobSpeed)) = [];
-            blobTurn = blobTurn(~isnan(blobTurn));
-            blobSpeed = blobSpeed(~isnan(blobSpeed));
-            if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum(~isnan(blobTurn) & ~isnan(blobSpeed))>0
+            
+            if length(obj.actuatorControl.operated.values)>1 && length(blobTurn) < length(obj.actuatorControl.operated.values)
+                obj.actuatorControl.operated = obj.actuatorControl.operated.resize(1,length(blobTurn));
                 obj.actuatorControl.operated = obj.actuatorControl.operated.clear_value();
-                obj.actuatorControl.operated = obj.actuatorControl.operated.add_trial1Data(actuatorControlArray,blobTurn ~= 0 | blobSpeed ~= 0);
-                flankDet = [obj.actuatorControl.operated.values ;0]- [0; obj.actuatorControl.operated.values];
-                % Bouts calculation
+            end
+            % operated bit
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             
+            % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+            
+            startZeroID = startZeroID(zeroCrossingIDs);
+            endZeroID =  endZeroID(zeroCrossingIDs)-1;
+            
+            for i = 1: numel(startZeroID)
+                blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+            end
+                        
+         
+            % calculate operated bit.
+             if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum((measuredCyclesIDs))>0
+                operatedBit  = zeros(numel(blobTurn),0);
+                operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+                obj.actuatorControl.operated = obj.actuatorControl.operated.add_trial1Data(actuatorControlArray,operatedBit(measuredCyclesIDs));
+                
+                % Bouts calculation       
+                flankDet = [operatedBit ;0]- [0; operatedBit];
                 obj.actuatorControl.bouts = obj.actuatorControl.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
                 % Operating time
-                obj.actuatorControl.operatingTime = obj.actuatorControl.operatingTime.add_trial1Data(1,sum(rmmissing(obj.actuatorControl.operated.values)*0.02));
-            end
+                obj.actuatorControl.operatingTime = obj.actuatorControl.operatingTime.add_trial1Data(1,(sum(obj.actuatorControl.operated.values(measuredCyclesIDs))-1)*0.02);
+             end
+            
+
         end
+        
+        %filtered
+        function obj = createFilteredActuatorControl(obj,actuatorControlArray)
+            % Create actuatorControl structure
+            % Copy the joystick data when actuator mode equals 1
+            % because joystick controls now the actuators instead of
+            % the motors
+            %
+            %Declaration
+            if( ~isprop(obj,'actuatorControl'))
+                obj.addprop('actuatorControl');
+            end
+            maxCycleCount = numel(obj.data(3).values);
+            obj.actuatorControl.filtered.turn = classes.data("Turn","raw","int_8",maxCycleCount);
+            obj.actuatorControl.filtered.speed = classes.data("Speed","raw","int_8",maxCycleCount);
+            obj.actuatorControl.filtered.profile = classes.data("Profile","number","int_8",maxCycleCount);
+            obj.actuatorControl.filtered.operated = classes.data("Operated","bit","boolean",maxCycleCount);
+            obj.actuatorControl.filtered.bouts = classes.data("Bouts","bouts/measurement","boolean",1);
+            obj.actuatorControl.filtered.operatingTime = classes.data("Operating time","s","float_64",1);
+            
+            %Copy turn and speed to actuatorControl when actuator mode is
+            %active
+            obj.actuatorControl.filtered.turn = obj.actuatorControl.filtered.turn.add_trial1Data(actuatorControlArray, obj.actuatorControl.turn.values(actuatorControlArray));
+            obj.actuatorControl.filtered.speed = obj.actuatorControl.filtered.speed.add_trial1Data(actuatorControlArray,obj.actuatorControl.speed.values(actuatorControlArray));
+            obj.actuatorControl.filtered.profile = obj.actuatorControl.filtered.profile.add_trial1Data(actuatorControlArray,obj.actuatorControl.profile.values(actuatorControlArray));
+     
+            
+           
+            obj.calculateFilteredActuatorOperatingTime(actuatorControlArray,obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values);
+        end        
+        
+        function obj = calculateFilteredActuatorOperatingTime(obj,actuatorControlArray,blobTurn,blobSpeed)
+            
+            if length(obj.actuatorControl.filtered.operated.values)>1 && length(blobTurn) < length(obj.actuatorControl.filtered.operated.values)
+                obj.actuatorControl.filtered.operated = obj.actuatorControl.filtered.operated.resize(1,length(blobTurn));
+                obj.actuatorControl.filtered.operated = obj.actuatorControl.filtered.operated.clear_value();
+            end
+            % operated bit
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             
+            % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+            
+            startZeroID = startZeroID(zeroCrossingIDs);
+            endZeroID =  endZeroID(zeroCrossingIDs)-1;
+            
+            for i = 1: numel(startZeroID)
+                blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+            end
+                        
+         
+            % calculate operated bit.
+             if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum((measuredCyclesIDs))>0
+                operatedBit  = zeros(numel(blobTurn),0);
+                operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+                obj.actuatorControl.filtered.operated = obj.actuatorControl.filtered.operated.add_trial1Data(measuredCyclesIDs,operatedBit(measuredCyclesIDs));
+                
+                % Bouts calculation       
+                flankDet = [operatedBit ;0]- [0; operatedBit];
+                obj.actuatorControl.filtered.bouts = obj.actuatorControl.filtered.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
+                % Operating time
+                obj.actuatorControl.filtered.operatingTime = obj.actuatorControl.filtered.operatingTime.add_trial1Data(1,(sum(obj.actuatorControl.operated.values(measuredCyclesIDs))-1)*0.02);
+             end
+            
+
+        end
+        
+        %%  *************** Attendant control *******************
         
         function obj = createAttendantControl(obj,cyclecounter_list,attendantInControlArray)
             % Create actuatorControl structure
@@ -898,29 +1101,121 @@ classdef instrument < dynamicprops
                 %active
                 obj.data(2).values(attendantInControlArray) = nan;
                 obj.data(3).values(attendantInControlArray) = nan;
+                obj.data(4).values(attendantInControlArray) = nan;
                 cycleCounterList = ~isnan(obj.data(2).values);
                 % recalculate the operation time, operated and bauts
                 obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cycleCounterList);
                  obj.calculateAttendantOperatingTime(attendantInControlArray,obj.attendantControl.turn.values,obj.attendantControl.speed.values);
+                 
             end
         end
-            function obj = calculateAttendantOperatingTime(obj,AttendantControlArray,blobTurn,blobSpeed)
-                
-                blobTurn = blobTurn(~isnan(blobTurn));
-                blobSpeed = blobSpeed(~isnan(blobSpeed));
-                if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum(~isnan(blobTurn) & ~isnan(blobSpeed))>0
-                    obj.attendantControl.operated = obj.actuatorControl.operated.clear_value();
-                    obj.attendantControl.operated = obj.actuatorControl.operated.add_trial1Data(AttendantControlArray,blobTurn ~= 0 | blobSpeed ~= 0);
-                    flankDet = [obj.attendantControl.operated.values ;0]- [0; obj.attendantControl.operated.values];
-                    % Bouts calculation
-                    obj.attendantControl.bouts = obj.attendantControl.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
-                    % Operating time
-                    obj.attendantControl.operatingTime = obj.attendantControl.operatingTime.add_trial1Data(1,sum(rmmissing(obj.attendantControl.operated.values)*0.02));
-                end
-            end
         
+        function obj = calculateAttendantOperatingTime(obj,AttendantControlArray,blobTurn,blobSpeed)
+            if length(obj.attendantControl.operated.values)>1 && length(blobTurn) < length(obj.attendantControl.operated.values)
+                obj.attendantControl.operated = obj.attendantControl.operated.resize(1,length(obj.attendantControl.turn.values));                    
+                obj.attendantControl.operated = obj.attendantControl.operated.clear_value();
+            end
+            % operated bit
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum(~isnan(blobTurn) & ~isnan(blobSpeed))>0
+                % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+                [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+
+                startZeroID = startZeroID(zeroCrossingIDs);
+                endZeroID =  endZeroID(zeroCrossingIDs)-1;
+
+                for i = 1: numel(startZeroID)
+                    blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                    blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+                end
+                        
+         
+                % calculate operated bit.
+             
+                operatedBit  = zeros(numel(blobTurn),0);
+                operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+                obj.attendantControl.operated = obj.attendantControl.operated.add_trial1Data(AttendantControlArray,operatedBit(measuredCyclesIDs));
+                
+                % Bouts calculation       
+                flankDet = [operatedBit ;0]- [0; operatedBit];
+                obj.attendantControl.bouts = obj.attendantControl.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
+                % Operating time
+                obj.attendantControl.operatingTime = obj.attendantControl.operatingTime.add_trial1Data(1,(sum(obj.attendantControl.operated.values(measuredCyclesIDs))-1)*0.02); 
+             end 
+        end
+        
+        function obj = createFilteredAttendantControl(obj,attendantInControlArray)
+            % Create actuatorControl structure
+            % Copy the joystick data when actuator mode equals 1
+            % because joystick controls now the actuators instead of
+            % the motors
+            %
+            %Declaration
+            if( isprop(obj,'attendantControl'))
+                maxCycleCount = numel(obj.data(3).values);
+                obj.attendantControl.filtered.turn  = classes.data("Turn","raw","int_8",maxCycleCount);
+                obj.attendantControl.filtered.speed = classes.data("Speed","raw","int_8",maxCycleCount);
+                
+                obj.attendantControl.filtered.operated = classes.data("Operated","bit","boolean",maxCycleCount);
+                obj.attendantControl.filtered.bouts = classes.data("Bouts","bouts/measurement","boolean",1);
+                obj.attendantControl.filtered.operatingTime = classes.data("Operating time","s","float_64",1);
+
+                %Copy turn and speed to actuatorControl when actuator mode is
+                %active
+                obj.attendantControl.filtered.turn = obj.attendantControl.filtered.turn.add_trial1Data(attendantInControlArray,obj.attendantControl.turn.values(attendantInControlArray));
+                obj.attendantControl.filtered.speed = obj.attendantControl.filtered.speed.add_trial1Data(attendantInControlArray,obj.attendantControl.speed.values(attendantInControlArray));
+
+                
+                % recalculate the operation time, operated and bauts
+                 obj.calculateFilteredAttendantOperatingTime(attendantInControlArray,obj.attendantControl.filtered.turn.values,obj.attendantControl.filtered.speed.values);
+                 
+            end
+        end
+        
+         function obj = calculateFilteredAttendantOperatingTime(obj,AttendantControlArray,blobTurn,blobSpeed)
+            if length(obj.attendantControl.filtered.operated.values)>1 && length(blobTurn) < length(obj.attendantControl.filtered.operated.values)
+                obj.attendantControl.filtered.operated = obj.attendantControl.filtered.operated.resize(1,length(obj.attendantControl.turn.values));                    
+                obj.attendantControl.filtered.operated = obj.attendantControl.filtered.operated.clear_value();
+            else 
+                obj.attendantControl.filtered.operated = obj.attendantControl.filtered.operated.clear_value();
+            end
+            % operated bit
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum(~isnan(blobTurn) & ~isnan(blobSpeed))>0
+                % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+                [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+
+                startZeroID = startZeroID(zeroCrossingIDs);
+                endZeroID =  endZeroID(zeroCrossingIDs)-1;
+
+                for i = 1: numel(startZeroID)
+                    blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                    blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+                end
+                        
+         
+                % calculate operated bit.
+             
+                operatedBit  = zeros(numel(blobTurn),0);
+                operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+                obj.attendantControl.filtered.operated = obj.attendantControl.filtered.operated.add_trial1Data(measuredCyclesIDs,operatedBit(measuredCyclesIDs));
+                
+                % Bouts calculation       
+                flankDet = [operatedBit ;0]- [0; operatedBit];
+                obj.attendantControl.filtered.bouts = obj.attendantControl.filtered.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
+                % Operating time
+                obj.attendantControl.filtered.operatingTime = obj.attendantControl.filtered.operatingTime.add_trial1Data(1,(sum(obj.attendantControl.filtered.operated.values(measuredCyclesIDs))-1)*0.02); 
+             end 
+        end
+            
+        function profileOperatingTime = profileOperatingTime(obj,profileArray,profineNr, operatedBitArray)
+            profileOperatingTime = round((sum(profileArray==profineNr & operatedBitArray ==1)-1)*0.02 ,2);
+            if profileOperatingTime < 0
+                profileOperatingTime = 0;
+            end
+        end
         %%  *************** plot function *******************
-        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor, showDistSubs,showGPS)
+        function obj = plot_all(obj,measureID,startTime,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor, showDistSubs,showGPS,fontSize)
             % plot all the sensordata object of the instrument.
             % It plots with the following settings:
             % - Font size= 20
@@ -929,7 +1224,7 @@ classdef instrument < dynamicprops
             % - The axes hava a default axis font size of 18 or 14.
             % - The figures gets a title in the format:
             %   -   starttime - measurement ID: xx -
-            fontSize = 20;
+        
             if obj.datatype ==193 && showGPS >0 || obj.datatype ~=193
                 figure();
                 set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
@@ -946,11 +1241,11 @@ classdef instrument < dynamicprops
                         R=100;
                     end
                     subplotArray(1) =  subplot(3,1,1);
-                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) =  subplot(3,1,2);
-                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                      
 %                     text(startTime+ seconds(1),5, "Operating time: " + round(sum(obj.data(2).values~=0 | obj.data(3).values~=0)*0.02,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
 %                         
@@ -973,14 +1268,14 @@ classdef instrument < dynamicprops
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(2,1,1);
-                        p=obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        p=obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         p.Marker= '*';
                         if isprop(obj,'actuatorControl') && ~isempty(obj.actuatorControl.operatingTime)
                             text(startTime+ seconds(1),0.5, "Actuator Operating time: " + round(obj.actuatorControl.operatingTime.values,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         end
                         subplotArray(2) = subplot(2,1,2);
-                        obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
-                        Title = [obj.name newline  '- ' ...
+                        obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
+                        Title = [obj.name newline  ' actuator - ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - Measurement ID: ' num2str(measureID) ' - '];
                         try
@@ -993,64 +1288,112 @@ classdef instrument < dynamicprops
                     
                     % ----- Plot separated  speed and turn
                     if isprop(obj,'actuatorControl')
-                        obj.plotJoystickSpeedTurn(obj.actuatorControl, measureID, 'Actuator Control',startTime);
+                        obj.plotJoystickSpeedTurn(obj.actuatorControl, measureID, 'Actuator Control',startTime,fontSize);
+                        if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                             obj.plotJoystickSpeedTurn(obj.actuatorControl.filtered, measureID, 'Filtered actuator Control',startTime,fontSize);
+                        end  
                     end
                     if isprop(obj,'attendantControl')
-                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime);
+                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime,fontSize);
+                        if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                             obj.plotJoystickSpeedTurn(obj.attendantControl.filtered, measureID, 'Filtered attendant Control',startTime,fontSize);
+                        end  
+                        
                     end
                     
                     disp("---------  operating times in specific profile ---------")
-                    if isprop(obj,'attendantControl')
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user";"attendant control"];
-                    else
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
-                    end
-                    OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
-                    if isprop(obj,'attendantControl')
-                        OperatingTimeInSec(9,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
-                    end
-                    table(profile,OperatingTimeInSec)
-                    
-                    if obj.filtered
-                        disp("---------  Filtered operating times in specific profile ---------")
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
-                        OperatingTimeInSec = zeros(8,1);
-                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)),2);
-                        table(profile,OperatingTimeInSec)
-                    end
+                    profile = [0; 1; 2; 3; 4; 5; "total user";"attendant control" ];
+                    OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(5).values);
+                    OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(5).values);
+                    OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(5).values);
+                    OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(5).values);
+                    OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(5).values);
+                    OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(5).values); 
+                    OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
+                     if isprop(obj,'attendantControl')
+                        OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
+                     else
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(5).values);
+                     end         
+                   
                     if isprop(obj,'actuatorControl')
-                        disp("---------  Actuator control  ---------")
-                        disp(strcat("Operating time: ", string(obj.actuatorControl.operatingTime.values)," s"))
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
-                        OperatingTimeInSec = zeros(8,1);
-                        OperatingTimeInSec(1,1) = round(sum(obj.actuatorControl.profile.values==0 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(2,1) = round(sum(obj.actuatorControl.profile.values==1 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(3,1) = round(sum(obj.actuatorControl.profile.values==2 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(4,1) = round(sum(obj.actuatorControl.profile.values==3 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(5,1) = round(sum(obj.actuatorControl.profile.values==4 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.actuatorControl.profile.values==5 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(7,1) = round(sum(obj.actuatorControl.profile.values==6 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)),2);
-                        table(profile,OperatingTimeInSec)
+                        disp(strcat("Actuator operating time: ", string(obj.actuatorControl.operatingTime.values)," s"))
+                       
+                        actuatorOperatingTimeInSec = zeros(8,1);
+                        actuatorOperatingTimeInSec(1,1) = round(sum(obj.actuatorControl.profile.values==0 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
+                        actuatorOperatingTimeInSec(2,1) = round(sum(obj.actuatorControl.profile.values==1 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
+                        actuatorOperatingTimeInSec(3,1) = round(sum(obj.actuatorControl.profile.values==2 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
+                        actuatorOperatingTimeInSec(4,1) = round(sum(obj.actuatorControl.profile.values==3 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
+                        actuatorOperatingTimeInSec(5,1) = round(sum(obj.actuatorControl.profile.values==4 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
+                        actuatorOperatingTimeInSec(6,1) = round(sum(obj.actuatorControl.profile.values==5 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                                          
+                        actuatorOperatingTimeInSec(7,1) = round(sum(actuatorOperatingTimeInSec(1:6)),2);
+                        if isprop(obj,'attendantControl')
+                            actuatorOperatingTimeInSec(8,1) =nan;
+                        else
+                            actuatorOperatingTimeInSec(8,1) = round(sum(obj.actuatorControl.profile.values==6 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                          
+                        end      
+                        
+                        summationPerProfileTimeInSec(1,1) = round(OperatingTimeInSec(1,1)+ actuatorOperatingTimeInSec(1,1) ,2);
+                        summationPerProfileTimeInSec(2,1) = round(OperatingTimeInSec(2,1)+ actuatorOperatingTimeInSec(2,1) ,2);
+                        summationPerProfileTimeInSec(3,1) = round(OperatingTimeInSec(3,1)+ actuatorOperatingTimeInSec(3,1) ,2);
+                        summationPerProfileTimeInSec(4,1) = round(OperatingTimeInSec(4,1)+ actuatorOperatingTimeInSec(4,1) ,2);
+                        summationPerProfileTimeInSec(5,1) = round(OperatingTimeInSec(5,1)+ actuatorOperatingTimeInSec(5,1) ,2);
+                        summationPerProfileTimeInSec(6,1) = round(OperatingTimeInSec(6,1)+ actuatorOperatingTimeInSec(6,1) ,2);  
+                        summationPerProfileTimeInSec(7,1) = round(sum(summationPerProfileTimeInSec(1:6)),2);
+                        if isprop(obj,'attendantControl')
+                            summationPerProfileTimeInSec(8,1) =nan;
+                        else
+                           summationPerProfileTimeInSec(8,1) = round(OperatingTimeInSec(8,1)+ actuatorOperatingTimeInSec(8,1) ,2);
+                        end   
+                        table(profile,OperatingTimeInSec,actuatorOperatingTimeInSec,summationPerProfileTimeInSec)
 %                         obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,standardHeatmap,variableScale,true,fontSize);
 %                         % ------ Adjustable heatmap ------
 %                         gridSize =evalin('base', 'gridSize');
 %                         obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,gridSize,variableScale,false,fontSize);
+                    else
+                        table(profile,OperatingTimeInSec)
                     end
+                    
+                    
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        disp("---------  Filtered operating times in specific profile ---------")
+                        profile = [0; 1; 2; 3; 4; 5; "total  user";"attendant control"];
+                        OperatingTimeInSec = zeros(8,1);
+                        OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(10).values);
+                        OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(10).values);
+                        OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(10).values);
+                        OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(10).values);
+                        OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(10).values);
+                        OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(10).values);
+                        OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)),2);                        
+                        if isprop(obj,'attendantControl')
+                            OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.filtered.operated.values==1)*0.02  ,2);
+                        else
+                             OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(10).values);
+                        end  
+                        
+                        if isprop(obj,'actuatorControl')
+                                actuatorOperatingTimeInSec = zeros(8,1);
+                                actuatorOperatingTimeInSec(1,1) = round(sum(obj.actuatorControl.filtered.profile.values==0 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
+                                actuatorOperatingTimeInSec(2,1) = round(sum(obj.actuatorControl.filtered.profile.values==1 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
+                                actuatorOperatingTimeInSec(3,1) = round(sum(obj.actuatorControl.filtered.profile.values==2 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
+                                actuatorOperatingTimeInSec(4,1) = round(sum(obj.actuatorControl.filtered.profile.values==3 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
+                                actuatorOperatingTimeInSec(5,1) = round(sum(obj.actuatorControl.filtered.profile.values==4 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
+                                actuatorOperatingTimeInSec(6,1) = round(sum(obj.actuatorControl.filtered.profile.values==5 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);                                          
+                                actuatorOperatingTimeInSec(7,1) = round(sum(actuatorOperatingTimeInSec(1:6)),2);
+                                if isprop(obj,'attendantControl')
+                                    actuatorOperatingTimeInSec(8,1) =nan;
+                                else
+                                    actuatorOperatingTimeInSec(8,1) = round(sum(obj.actuatorControl.profile.values==6 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                          
+                                end 
+                                table(profile,OperatingTimeInSec,actuatorOperatingTimeInSec);
+                        else
+                          table(profile,OperatingTimeInSec)
+                        end
+                        
+                        
+                    end
+                  
                     
                     % *************** Deflections Pattern ****************
                     obj.DeflectionsPattern('',obj.data(2), obj.data(3), fontSize,plotDownSample,downSampleFactor);
@@ -1070,7 +1413,7 @@ classdef instrument < dynamicprops
                         obj.Heatmp('',obj.data(2).values,obj.data(3).values,R,gridSize,variableScale,false,fontSize);
                     end
                     % ------ Filtered  ------
-                    if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
+                    if showHeatMap(2) && isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         % ------ Standard heatmap ------
                         obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,R,standardHeatmap,variableScale,true,fontSize);
                         
@@ -1078,7 +1421,7 @@ classdef instrument < dynamicprops
                         gridSize =evalin('base', 'gridSize');
                         obj.Heatmp('Filtered',obj.data(8).values,obj.data(9).values,R,gridSize,variableScale,true,fontSize);
                     end
-                    if showHeatMap(3) && ~isempty(obj.actuatorControl) 
+                    if showHeatMap(3) && isprop(obj,'actuatorControl') && ~isempty(obj.actuatorControl) 
                         % ------ Standard heatmap ------
                         obj.Heatmp('Filtered',obj.actuatorControl.speed.values,obj.actuatorControl.turn.values,R,standardHeatmap,variableScale,true,fontSize);
                         
@@ -1094,15 +1437,15 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit ,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1113,22 +1456,22 @@ classdef instrument < dynamicprops
                     end
                     linkaxes(subplotArray,'x');
                     % ---------- Filtered ------------
-                    if  obj.filtered
+                    if  isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         figure();
                         subplotArray=[];
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1148,15 +1491,15 @@ classdef instrument < dynamicprops
                             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                             set(0, 'DefaultAxesFontSize', fontSize);
                             subplotArray(1) = subplot(3,1,1);
-                            obj.actuatorControl.operated.plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                            obj.actuatorControl.operated.plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                             xL=xlim;
                             yL=ylim;
                             text(xL(2),1.2*yL(2),string(obj.actuatorControl.bouts.values) + " " + obj.actuatorControl.bouts.unit ,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                             text(xL(1),1.2*yL(2),"Actuator operating time: " + string(obj.actuatorControl.operatingTime.values) + " " + obj.actuatorControl.operatingTime.unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                             subplotArray(2) = subplot(3,1,2);
-                            obj.actuatorControl.turn.plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                            obj.actuatorControl.turn.plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                             subplotArray(3) =  subplot(3,1,3);
-                            obj.actuatorControl.speed.plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                            obj.actuatorControl.speed.plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                             Title = ['Actuator control' newline  '- ' ...
                                 datestr(startTime,'dd/mm/yyyy') ,...
                                 ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1171,13 +1514,13 @@ classdef instrument < dynamicprops
                     
                 case 161 % A1 JOYSTICK DX2
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) =  subplot(2,3,4);
-                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =  subplot(2,3,5);
-                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(4) =  subplot(2,3,6);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1189,40 +1532,39 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     
                     if isprop(obj,'attendantControl')
-                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime);
+                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime,fontSize);
                     end
                     
                     disp("---------  operating times in specific profile ---------")
+                  
+                    profile = [0; 1; 2; 3; 4; 5;"total user";"attendant control"];
+                    
+                    OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(5).values);
+                    OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(5).values);
+                    OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(5).values);
+                    OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(5).values);
+                    OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(5).values);
+                    OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(5).values);
+                    OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
                     if isprop(obj,'attendantControl')
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user";"attendant control"];
+                        OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
                     else
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
-                    end
-                    OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
-                    if isprop(obj,'attendantControl')
-                        OperatingTimeInSec(9,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(5).values);
                     end
                     table(profile,OperatingTimeInSec)
                     
-                    if obj.filtered
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         disp("---------  Filtered operating times in specific profile ---------")
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
+                       
                         OperatingTimeInSec = zeros(8,1);
-                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
+                        OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(10).values);
+                        OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(10).values);
+                        OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(10).values);
+                        OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(10).values);
+                        OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(10).values);
+                        OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(10).values);                        
+                        OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(10).values);
                         table(profile,OperatingTimeInSec)
                     end
                     
@@ -1240,7 +1582,7 @@ classdef instrument < dynamicprops
                         obj.Heatmp('',obj.data(2).values,obj.data(3).values,128,gridSize,variableScale,false,fontSize);
                     end
                     % ------ Filtered  ------
-                    if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
+                    if showHeatMap(2) && isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         % ------ Standard heatmap ------
                         obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
                         
@@ -1256,15 +1598,15 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit ,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1275,22 +1617,22 @@ classdef instrument < dynamicprops
                     end
                     linkaxes(subplotArray,'x');
                     % ---------- Filtered ------------
-                    if  obj.filtered
+                    if  isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         figure();
                         subplotArray=[];
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1304,15 +1646,15 @@ classdef instrument < dynamicprops
                     
                 case 162 % A2 JOYSTICK PG
                     subplotArray(1) = subplot(2,4,1:4);
-                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(2,4,5);
-                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(2,4,6);
-                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(4) = subplot(2,4,7);
-                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(5) = subplot(2,4,8);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     Title =[obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1324,38 +1666,39 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     
                     if isprop(obj,'attendantControl')
-                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime);
+                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime,fontSize);
                     end
                     
                     disp("---------  operating times in specific profile ---------")
-                     if isprop(obj,'attendantControl')
-                        profile = [0; 1; 2; 3; 4; 5; "total user";"attendant control"];
-                    else
-                        profile = [0; 1; 2; 3; 4; 5; "total user"];
-                    end
-                    OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(6).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:5)) ,2);
+                   
+                    profile = [0; 1; 2; 3; 4; 5; "total user";"attendant control"];
+                    
+                    OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(6).values);
+                    OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(6).values);
+                    OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(6).values);
+                    OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(6).values);
+                    OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(6).values);
+                    OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(6).values);
+                    OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
                     if isprop(obj,'attendantControl')
                         OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
+                    else
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(5).values);
                     end
                     table(profile,OperatingTimeInSec)
                     
-                    if obj.filtered
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         disp("---------  Filtered operating times in specific profile ---------")
-                        profile = [0; 1; 2; 3; 4; 5; "total user"];
+                        
                         OperatingTimeInSec = zeros(7,1);
-                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(11).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:5)) ,2);
+                        OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(11).values);
+                        OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(11).values);
+                        OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(11).values);
+                        OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(11).values);
+                        OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(11).values);
+                        OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(11).values);
+                        OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(10).values);
                         table(profile,OperatingTimeInSec)
                     end
                     
@@ -1374,7 +1717,7 @@ classdef instrument < dynamicprops
                     end
                     
                     % ------ Filtered ------
-                    if showHeatMap(2) &&  ~isempty(obj.filtered) && obj.filtered
+                    if showHeatMap(2) &&  isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         % ------ Standard heatmap ------
                         obj.Heatmp('filtered',obj.data(9).values,obj.data(10).values,100,standardHeatmap,variableScale,true,fontSize);
                         
@@ -1390,15 +1733,15 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(6).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(8).values) + " " + obj.data(8).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1409,22 +1752,22 @@ classdef instrument < dynamicprops
                     end
                     linkaxes(subplotArray,'x');
                     % ---------- Filtered ------------
-                    if  obj.filtered
+                    if  isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         figure();
                         subplotArray=[];
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(13).values) + " " + obj.data(13).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(9).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(9).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(10).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(10).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1438,13 +1781,13 @@ classdef instrument < dynamicprops
                     
                 case 163 % A3 JOYSTICK LINX
                     subplotArray(1) = subplot(2,3,1:3);
-                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) =subplot(2,3,4);
-                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =subplot(2,3,5);
-                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(4) =subplot(2,3,6);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
                         'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1456,40 +1799,36 @@ classdef instrument < dynamicprops
                     linkaxes(subplotArray,'x');
                     
                     if isprop(obj,'attendantControl')
-                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime);
+                        obj.plotJoystickSpeedTurn(obj.attendantControl, measureID, 'Attendant Control',startTime,fontSize);
                     end
                     
                     disp("---------  operating times in specific profile ---------")
-                     if isprop(obj,'attendantControl')
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user";"attendant control"];
-                    else
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
-                    end
-                    OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(5).values ==1)*0.02 ,2);
-                    OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
+                    profile = [0; 1; 2; 3; 4; 5;"total user";"attendant control"];
+                    OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(5).values);
+                    OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(5).values);
+                    OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(5).values);
+                    OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(5).values);
+                    OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(5).values);
+                    OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(5).values);                    
+                    OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
                     if isprop(obj,'attendantControl')
-                        OperatingTimeInSec(9,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
+                        OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
+                    else
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(5).values);
                     end
                     table(profile,OperatingTimeInSec)
                     
-                    if obj.filtered
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         disp("---------  Filtered operating times in specific profile ---------")
-                        profile = [0; 1; 2; 3; 4; 5; 6; "total user"];
                         OperatingTimeInSec = zeros(8,1);
-                        OperatingTimeInSec(1,1) = round(sum(obj.data(4).values==0 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(2,1) = round(sum(obj.data(4).values==1 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(3,1) = round(sum(obj.data(4).values==2 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(4,1) = round(sum(obj.data(4).values==3 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(5,1) = round(sum(obj.data(4).values==4 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(6,1) = round(sum(obj.data(4).values==5 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(7,1) = round(sum(obj.data(4).values==6 & obj.data(10).values ==1)*0.02 ,2);
-                        OperatingTimeInSec(8,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
+                        OperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.data(4).values,0, obj.data(10).values);
+                        OperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.data(4).values,1, obj.data(10).values);
+                        OperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.data(4).values,2, obj.data(10).values);
+                        OperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.data(4).values,3, obj.data(10).values);
+                        OperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.data(4).values,4, obj.data(10).values);
+                        OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(10).values);
+                        OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);                        
+                        OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(10).values);
                         table(profile,OperatingTimeInSec)
                     end
                     
@@ -1508,7 +1847,7 @@ classdef instrument < dynamicprops
                     end
                     
                     % ------ Filtered ------
-                    if showHeatMap(2) && ~isempty(obj.filtered) && obj.filtered
+                    if showHeatMap(2) && isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         % ------ Standard heatmap ------
                         obj.Heatmp('filtered',obj.data(8).values,obj.data(9).values,128,standardHeatmap,variableScale,true,fontSize);
                         
@@ -1524,15 +1863,15 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     xL=xlim;
                     yL=ylim;
                     text(xL(2),1.2*yL(2),string(obj.data(6).values) + " " + obj.data(6).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top');
                     text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(7).values) + " " + obj.data(7).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =  subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     Title = [obj.name newline  '- ' ...
                         datestr(startTime,'dd/mm/yyyy') ,...
                         ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1543,22 +1882,22 @@ classdef instrument < dynamicprops
                     end
                     linkaxes(subplotArray,'x');
                     % ---------- Filtered ------------
-                    if  obj.filtered
+                    if  isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                         figure();
                         subplotArray=[];
                         set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         xL=xlim;
                         yL=ylim;
                         text(xL(2),1.2*yL(2),string(obj.data(11).values) + " " + obj.data(11).unit,'fontsize',fontSize,'HorizontalAlignment','right','VerticalAlignment','top')
                         text(xL(1),1.2*yL(2),"Operating time: " + string(obj.data(12).values) + " " + obj.data(12).unit,'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                        obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(3) =  subplot(3,1,3);
-                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         Title = [obj.name newline  '- ' ...
                             datestr(startTime,'dd/mm/yyyy') ,...
                             ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1572,11 +1911,11 @@ classdef instrument < dynamicprops
                 case 176 % B0 TRIAL 1 IMU 9AXIS
                     % accelleration
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) =subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1592,11 +1931,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1612,11 +1951,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1632,16 +1971,16 @@ classdef instrument < dynamicprops
                     set(gca,'fontsize',20) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
-                    p=obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    p=obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     p.Marker = '*';
                 case 177 % B1 IMU 9AXIS
                     % accelleration
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) =subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1657,11 +1996,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1677,11 +2016,11 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(8).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(9).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1698,22 +2037,22 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(12).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(12).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(13).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(13).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     
                 case 178 % B2 IMU 6AXIS
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) = subplot(3,1,3);
-                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                     Title = [obj.name newline  '- ' ...
                         datestr(datetime(startTime), ...
@@ -1728,24 +2067,24 @@ classdef instrument < dynamicprops
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(3,1,1);
-                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(2) = subplot(3,1,2);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor, fontSize);
                     subplotArray(3) =subplot(3,1,3);
-                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                     linkaxes(subplotArray,'x');
                 case 192 % C0 TRIAL 1 GPS
                     % plot gps if filled
                     if sum(isnan(obj.data(1).values))~=numel(obj.data(1).values)
                         if showGPS >0
                             subplotArray(1) = subplot(4,1,1);
-                            obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                            obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                             subplotArray(2) = subplot(4,1,2);
-                            obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                            obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor, fontSize);
                             subplotArray(3) = subplot(4,1,3);
-                            obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                            obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                             subplotArray(4) = subplot(4,1,4);
-                            obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                            obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                             Title = [obj.name newline  '- ' ...
                                 datestr(datetime(startTime), ...
                                 'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1762,7 +2101,7 @@ classdef instrument < dynamicprops
                             %
                             %
                             %                             subplotArray(3) =subplot(3,1,3);
-                            %                             obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                            %                             obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                             %                             linkaxes(subplotArray,'x');
                             %                             Title = [obj.name newline  '- ' ...
                             %                                 datestr(datetime(startTime), ...
@@ -1843,11 +2182,11 @@ classdef instrument < dynamicprops
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(6).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(6).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(3) =subplot(3,1,3);
-                        obj.data(7).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(7).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         linkaxes(subplotArray,'x');
                     else
                         disp('No GPS clock');
@@ -1855,9 +2194,9 @@ classdef instrument < dynamicprops
                 case 193 % C1 GPS MIN
                     if showGPS >0
                         subplotArray(1) = subplot(2,1,1);
-                        obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(2) = subplot(2,1,2);
-                        obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                        obj.data(2).plot(startTime,true,true,false,plotDownSample,downSampleFactor, fontSize);
                         Title = [obj.name newline  '- ' ...
                             datestr(datetime(startTime), ...
                             'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '];
@@ -1872,11 +2211,11 @@ classdef instrument < dynamicprops
                         set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                         set(0, 'DefaultAxesFontSize', fontSize);
                         subplotArray(1) = subplot(3,1,1);
-                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(2) = subplot(3,1,2);
-                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor, fontSize);
                         subplotArray(3) =subplot(3,1,3);
-                        obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(5).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         linkaxes(subplotArray,'x');
                         Title = [obj.name newline  '- ' ...
                             datestr(datetime(startTime), ...
@@ -1941,124 +2280,124 @@ classdef instrument < dynamicprops
                 case 195 % C3 GPS DATA STATUS
                     disp([obj.name " is not yet programmed"]);
                 case 209 % D1 CAN DISTANCE NODES (US)
-                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor, fontSize);
                 case 210 % D2 CAN DISTANCE NODES (IR)
-                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor, fontSize);
                     %                     ylim([0 max(obj.data(1).values)*1.2]);
                 case 211 % D3 CAN DISTANCE NODES (US+IR)
                     if showDistSubs == false || size(obj.data,2)==1
-                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor, fontSize);
                     else
                         subplotArray(1) =subplot(2,2,1:2);
-                        obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(2) =subplot(2,2,3);
-                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(3) = subplot(2,2,4);
-                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         linkaxes(subplotArray,'x');
                     end
                 case 212 % D4 CAN DISTANCE NODES (US+2IR)
                     if showDistSubs == false || size(obj.data,2)==1
-                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor,fontSize);
                     else
                         subplotArray(1) = subplot(2,3,1:3);
-                        obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,true,true,false,plotDownSample,downSampleFactor,fontSize);
                         ylim([0 max(obj.data(1).values)*1.2]);
                         subplotArray(2) = subplot(2,3,4);
-                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(3) = subplot(2,3,5);
-                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(4) = subplot(2,3,5);
-                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         linkaxes(subplotArray,'x');
                     end
                 case 213 % D5 CAN DISTANCE NODES (US+3IR)
                     if showDistSubs == false || size(obj.data,2)==1
-                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor,fontSize);
                     else
                         subplotArray(1) =subplot(2,4,1:4);
-                        obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(2) = subplot(2,4,5);
-                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(3) = subplot(2,4,6);
-                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(4) = subplot(2,4,7);
-                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(5) = subplot(2,4,8);
-                        obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         linkaxes(subplotArray,'x');
                     end
                 case 214 % D6 CAN DISTANCE NODES (4IR)
                     if showDistSubs == false || size(obj.data,2)==1
-                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor,fontSize);
                     else
                         subplotArray(1) = subplot(2,4,1:4);
-                        obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                        obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(2) = subplot(2,4,5);
-                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(2).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(3) = subplot(2,4,6);
-                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(3).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(4) = subplot(2,4,7);
-                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(4).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         subplotArray(5) = subplot(2,4,8);
-                        obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor);
+                        obj.data(5).plot(startTime,true,false,false,plotDownSample,downSampleFactor,fontSize);
                         linkaxes(subplotArray,'x');
                     end
                 case 215 % D7 CAN DISTANCE NODES (4IR) Only Calculated Value
-                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor,fontSize);
                 case 216 % D8 CAN DISTANCE NODES (US+3IR) Only Calculated Value
-                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,true,plotDownSample,downSampleFactor,fontSize);
                 case 225 % E1 Real Time Clock
-                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,false,true,false,plotDownSample,downSampleFactor,fontSize);
                 case 241 % F1 USB AD as Instrument
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(3).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     s = get(gca, 'Position');
                     set(gca, 'Position', [s(1), s(2), s(3), s(4) * 0.9])
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                     s = get(gca, 'Position');
                     set(gca, 'Position', [s(1), s(2), s(3), s(4) * 0.9])
                     linkaxes(subplotArray,'x');
                 case 242 % F2 USB AD as Instrument + Sensor activate bits
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(1).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(2).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(3).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(3).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                     linkaxes(subplotArray,'x');
                     figure()
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(5).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(6).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(6).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(7).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(8).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(8).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                     linkaxes(subplotArray,'x');
                     figure()
                     set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                     set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                     set(0, 'DefaultAxesFontSize', fontSize);
                     subplotArray(1) = subplot(4,1,1);
-                    obj.data(9).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(9).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(2) = subplot(4,1,2);
-                    obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(10).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(3) = subplot(4,1,3);
-                    obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor);
+                    obj.data(11).plot(startTime,true,false,true,plotDownSample,downSampleFactor,fontSize);
                     subplotArray(4) = subplot(4,1,4);
-                    obj.data(12).plot(startTime,true,true,true,plotDownSample,downSampleFactor);
+                    obj.data(12).plot(startTime,true,true,true,plotDownSample,downSampleFactor,fontSize);
                     linkaxes(subplotArray,'x');
             end
             
@@ -2073,7 +2412,7 @@ classdef instrument < dynamicprops
                 end
             end
             
-            plotJoystickPath(obj,measureID,startTime,showJoystickPath)
+            plotJoystickPath(obj,measureID,startTime,showJoystickPath,fontSize)
             
         end
         
@@ -2172,7 +2511,7 @@ classdef instrument < dynamicprops
             writematrix(obj.heatmapVariable.bin,filename,'Sheet',"standard",'Range','C16')
             
             %            Filtered heatmaps
-            if obj.filtered
+            if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                 writematrix("Standard speed axis",filename,'Sheet',"filtered",'Range','A2')
                 writematrix(obj.filteredheatmapStandard.speedAxis',filename,'Sheet',"filtered",'Range','A3')
                 writematrix("standard turn axis",filename,'Sheet',"filtered",'Range','B1')
@@ -2214,10 +2553,9 @@ classdef instrument < dynamicprops
             ylabel(yData.name);
         end
         
-        function plotJoystickSpeedTurn(obj,data,measurementID, title, startTime)
+        function plotJoystickSpeedTurn(obj,data,measurementID, title, startTime,fontSize)
             time = seconds(0:(numel(data.turn.values)-1))*0.020 + startTime;
-            fontSize = 20;
-            figure();
+           figure();
             set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
             set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
             set(0, 'DefaultAxesFontSize', fontSize);
@@ -2243,14 +2581,15 @@ classdef instrument < dynamicprops
             catch
                 suptitle(Title);
             end
+            xlim([time(1) time(end)]);
             linkaxes(subplotArray,'x');
         end
         
-        function plotJoystickPath(obj,measureID,startTime,showJoystickPath)
+        function plotJoystickPath(obj,measureID,startTime,showJoystickPath,fontSize)
             
             % --------------------- Joystick path length ----------------------------
             if( isprop(obj,'pathLength'))
-                fontSize = 20;
+                
                 time = seconds(0:(size(obj.pathLength.d,1)-1))*0.020 + startTime;
                 tzOffset = tzoffset(startTime);
                 
@@ -2267,7 +2606,7 @@ classdef instrument < dynamicprops
                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Instantaneous joystick path length [RAW]' ];
                 
-                title(Title,'fontsize',20);
+                title(Title,'fontsize',fontSize);
                 
                 if showJoystickPath(1)
                     subplotArray(2) = subplot(1 + (nrPlots>0),2,3:3+(nrPlots==1));
@@ -2282,7 +2621,7 @@ classdef instrument < dynamicprops
                     subplotArray(3-(nrPlots==1)) = subplot(1 + (nrPlots>0),2,4-(nrPlots==1):4);
                     plot(time,obj.pathLength.dy,'LineWidth',2 )
                     xlim(([min(time) (max(time))]));
-                    xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                    xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
                     title('dy [RAW]','fontsize',fontSize)
                 end
                 linkaxes(subplotArray,'x');
@@ -2295,12 +2634,12 @@ classdef instrument < dynamicprops
                 xlim(([min(time) (max(time))]));
                 
                 %                 ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
-                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Cumulative joystick path length (CJPL) [RAW]' ];
                 
-                title(Title,'fontsize',20);
+                title(Title,'fontsize',fontSize);
                 text(time(50),obj.pathLength.cumd(end), "CJPL score: " + round(obj.pathLength.scoreD),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                 text(time(50),obj.pathLength.cumd(end)*0.95, "NJS for polynomials: " + round(obj.pathLength.NJS_poly(end)),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                 text(time(50),obj.pathLength.cumd(end)*0.9, "NJS for harmonics: " + round(obj.pathLength.NJS_harm(end)),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
@@ -2317,13 +2656,13 @@ classdef instrument < dynamicprops
                 set(0, 'DefaultAxesFontSize', fontSize);
                 subplotArray(1) = subplot(2,1,1);
                 plot(obj.pathLength.t,obj.pathLength.NJS_poly,'LineWidth',2 )
-                title('NJS for polynomials','fontSize',20);
+                title('NJS for polynomials','fontSize',fontSize);
                 ylabel('NJS');
                 subplotArray(2) = subplot(2,1,2);
                 plot(obj.pathLength.t,obj.pathLength.NJS_harm,'LineWidth',2 )
-                title('NJS for harmonics','fontSize',20);
+                title('NJS for harmonics','fontSize',fontSize);
                 ylabel('NJS');
-                xlabel('Effective raw movement time (s)','fontsize',20);
+                xlabel('Effective raw movement time (s)','fontsize',fontSize);
                 linkaxes(subplotArray,'x');
                 
                 %                 % differences plots
@@ -2379,7 +2718,6 @@ classdef instrument < dynamicprops
             
             % --------------------- Filtered joystick path length ----------------------------
             if( isprop(obj,'filteredPathLength'))
-                fontSize = 20;
                 tzOffset = tzoffset(startTime);
                 
                 figure();
@@ -2390,18 +2728,18 @@ classdef instrument < dynamicprops
                 subplotArray(1) = subplot(1 + (nrPlots>0),2,1:2);
                 plot(time,obj.filteredPathLength.d,'LineWidth',2 )
                 xlim(([min(time) (max(time))]));
-                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Filtered Instantaneous joystick path length' ];
                 
-                title(Title,'fontsize',20);
+                title(Title,'fontsize',fontSize);
                 
                 if showJoystickPath(1)
                     subplotArray(2) = subplot(1 + (nrPlots>0),2,3:3+(nrPlots==1));
                     plot(time,obj.filteredPathLength.dx ,'LineWidth',2)
                     xlim(([min(time) (max(time))]));
-                    xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                    xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
                     title('Filtered dx','fontsize',fontSize)
                     linkaxes(subplotArray,'x');
                 end
@@ -2410,7 +2748,7 @@ classdef instrument < dynamicprops
                     subplotArray(3-(nrPlots==1)) = subplot(1 + (nrPlots>0),2,4-(nrPlots==1):4);
                     plot(time,obj.filteredPathLength.dy,'LineWidth',2 )
                     xlim(([min(time) (max(time))]));
-                    xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                    xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
                     title('Filtered dy','fontsize',fontSize)
                     linkaxes(subplotArray,'x');
                 end
@@ -2426,12 +2764,12 @@ classdef instrument < dynamicprops
                 text(time(50),obj.filteredPathLength.cumd(end)*0.9, "NJS for harmonics: " + round(obj.filteredPathLength.NJS_harm(end)),'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                 
                 %                 ylabel([yText ' [' char(obj.unit) ']'],'fontsize',20);
-                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',20);
+                xlabel('Time (UTC +'+  extractBefore(string(tzOffset,'hh:mm'),':')+ ')','fontsize',fontSize);
                 Title = [datestr(datetime(startTime), ...
                     'dd/mm/yyyy') ' - Measurement ID: ' num2str(measureID) ' - '  newline ....
                     'Filtered Cumulative Joystick Path Length (CJPL)' ];
                 
-                title(Title,'fontsize',20);
+                title(Title,'fontsize',fontSize);
                 display( "Filtered CJPL score: " + round(obj.filteredPathLength.scoreD));
                 display("NJS for measurement with polynomials: " + round(obj.filteredPathLength.NJS_poly(end))');
                 display("NJS for measurement with harmonics: " + round(obj.filteredPathLength.NJS_harm(end))');
@@ -2444,13 +2782,13 @@ classdef instrument < dynamicprops
                 set(0, 'DefaultAxesFontSize', fontSize);
                 subplotArray(1) = subplot(2,1,1);
                 plot(obj.filteredPathLength.t,obj.filteredPathLength.NJS_poly,'LineWidth',2 )
-                title('Filtered NJS for polynomials','fontSize',20);
+                title('Filtered NJS for polynomials','fontSize',fontSize);
                 ylabel('NJS');
                 subplotArray(2) = subplot(2,1,2);
                 plot(obj.filteredPathLength.t, obj.filteredPathLength.NJS_harm,'LineWidth',2 )
-                title('Filtered NJS for harmonics','fontSize',20);
+                title('Filtered NJS for harmonics','fontSize',fontSize);
                 ylabel('NJS');
-                xlabel('Effective filtered movement time (s)','fontsize',20);
+                xlabel('Effective filtered movement time (s)','fontsize',fontSize);
                 linkaxes(subplotArray,'x');
             end
             
@@ -2489,7 +2827,7 @@ classdef instrument < dynamicprops
                 obj.pathLength.diff3.x= diff(x,3);
                 obj.pathLength.diff3.y= diff(y,3);
                 
-                if  obj.filtered
+                if  isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                     if( ~isprop(obj,'filteredPathLength'))
                         obj.addprop('filteredPathLength');
                     end
@@ -2554,21 +2892,10 @@ classdef instrument < dynamicprops
             speed_clean= obj.data(startIndex+1).values;
             
             % remove more than 3 consecutive [0,0] from the turn and speed
-            noMovementID = turn_clean == 0 & speed_clean ==0;           
-            diffNoMovement = [0; diff(noMovementID)];
-             
-            startZeroID = find(diffNoMovement==1);
-            endZeroID = find(diffNoMovement==-1);
-            
-            if ~isempty(endZeroID) && ~isempty(startZeroID) && endZeroID(1)< startZeroID(1)
-                startZeroID = [1; startZeroID];
-            end
-            if ~isempty(endZeroID) && ~isempty(startZeroID) && endZeroID(end)< startZeroID(end)
-                endZeroID(end+1) = length(noMovementID);
-            end
-            removeZeroID = (endZeroID - startZeroID)<=3;
-            startZeroID(removeZeroID) = [];
-            endZeroID(removeZeroID) = [];
+           [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,turn_clean,speed_clean);
+           
+            startZeroID(zeroCrossingIDs) = [];
+            endZeroID(zeroCrossingIDs) = [];
             
             startZeroID = startZeroID+1;
             endZeroID = endZeroID-2;
@@ -2641,7 +2968,7 @@ classdef instrument < dynamicprops
             len_sum=zeros(length(speed_clean),1);
             len_sum(2:end)=len_sumtem(1:end);
             
-            %Time array
+            %Time array                    
             timevec = ((0:length(speed_clean)-1)*Ts)';
             
             %Array of NJS            

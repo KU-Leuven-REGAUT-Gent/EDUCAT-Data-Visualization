@@ -625,19 +625,19 @@ classdef measurement < dynamicprops
         end
         %% *************** plot all instrument *******************
         
-        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS)
+        function obj = plot_all(obj,showHeatMap,standardHeatmap,variableScale,includedInstruments,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS,fontSize)
             %All the instruments will be plotted
             addpath('libraries')
+            
             for i = 1:obj.n_instruments
                 if isprop(obj.instruments(i),'extracted') && obj.instruments(i).extracted ==1 && includedInstruments(i)
-                    obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS);
+                    obj.instruments(i).plot_all(obj.id,obj.start_time,showHeatMap,standardHeatmap,variableScale,showJoystickPath,plotDownSample,downSampleFactor,showDistSubs,showGPS,fontSize);
                 end
             end
             %  Software instruments
             if (isprop(obj,'OAS')   &&  includedInstruments(i+1))
                 
-                figure();
-                fontSize= 20;
+                figure();                
                 set(gca,'fontsize',fontSize+2) % set fontsize of the plot to 20
                 set(gcf,'units','normalized','outerposition',[0 0 1 1]) % full screen
                 set(0, 'DefaultAxesFontSize', fontSize);
@@ -832,7 +832,7 @@ classdef measurement < dynamicprops
             obj.setup_name = "Trail 1";
             obj.user_id = 0;
             obj.user_name = "unknown";
-            % ------------------ creating instruments -------------------
+            % ------------------ creating instruments --------filtered-----------
             obj.n_instruments=3;
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
             
