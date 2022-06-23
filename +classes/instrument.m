@@ -838,7 +838,7 @@ classdef instrument < dynamicprops
             startZeroID = startZeroID+1;
             endZeroID = endZeroID-2;
             
-            filterID = ones(numel(obj.attendantControl.turn.values),1);
+            filterID = ones(numel(specificJoystickData.turn.values),1);
             for i = 1: numel(startZeroID)
                 filterID(startZeroID(i):endZeroID(i)) = 0;
             end
@@ -1315,17 +1315,17 @@ classdef instrument < dynamicprops
                      else
                         OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(5).values);
                      end         
-                   
+                     
                     if isprop(obj,'actuatorControl')
                         disp(strcat("Actuator operating time: ", string(obj.actuatorControl.operatingTime.values)," s"))
                        
                         actuatorOperatingTimeInSec = zeros(8,1);
-                        actuatorOperatingTimeInSec(1,1) = round(sum(obj.actuatorControl.profile.values==0 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        actuatorOperatingTimeInSec(2,1) = round(sum(obj.actuatorControl.profile.values==1 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        actuatorOperatingTimeInSec(3,1) = round(sum(obj.actuatorControl.profile.values==2 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        actuatorOperatingTimeInSec(4,1) = round(sum(obj.actuatorControl.profile.values==3 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        actuatorOperatingTimeInSec(5,1) = round(sum(obj.actuatorControl.profile.values==4 & obj.actuatorControl.operated.values ==1)*0.02 ,2);
-                        actuatorOperatingTimeInSec(6,1) = round(sum(obj.actuatorControl.profile.values==5 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                                          
+                        actuatorOperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,0, obj.actuatorControl.operated.values);
+                        actuatorOperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,1, obj.actuatorControl.operated.values);
+                        actuatorOperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,2, obj.actuatorControl.operated.values);
+                        actuatorOperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,3, obj.actuatorControl.operated.values);
+                        actuatorOperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,4, obj.actuatorControl.operated.values);
+                        actuatorOperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,5, obj.actuatorControl.operated.values);                                          
                         actuatorOperatingTimeInSec(7,1) = round(sum(actuatorOperatingTimeInSec(1:6)),2);
                         if isprop(obj,'attendantControl')
                             actuatorOperatingTimeInSec(8,1) =nan;
@@ -1374,19 +1374,34 @@ classdef instrument < dynamicprops
                         
                         if isprop(obj,'actuatorControl')
                                 actuatorOperatingTimeInSec = zeros(8,1);
-                                actuatorOperatingTimeInSec(1,1) = round(sum(obj.actuatorControl.filtered.profile.values==0 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
-                                actuatorOperatingTimeInSec(2,1) = round(sum(obj.actuatorControl.filtered.profile.values==1 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
-                                actuatorOperatingTimeInSec(3,1) = round(sum(obj.actuatorControl.filtered.profile.values==2 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
-                                actuatorOperatingTimeInSec(4,1) = round(sum(obj.actuatorControl.filtered.profile.values==3 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
-                                actuatorOperatingTimeInSec(5,1) = round(sum(obj.actuatorControl.filtered.profile.values==4 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);
-                                actuatorOperatingTimeInSec(6,1) = round(sum(obj.actuatorControl.filtered.profile.values==5 & obj.actuatorControl.filtered.operated.values ==1)*0.02 ,2);                                          
+                                summationPerProfileTimeInSec = zeros(8,1);
+                                actuatorOperatingTimeInSec(1,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,0, obj.actuatorControl.filtered.operated.values); 
+                                actuatorOperatingTimeInSec(2,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,1, obj.actuatorControl.filtered.operated.values); 
+                                actuatorOperatingTimeInSec(3,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,2, obj.actuatorControl.filtered.operated.values); 
+                                actuatorOperatingTimeInSec(4,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,3, obj.actuatorControl.filtered.operated.values); 
+                                actuatorOperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,4, obj.actuatorControl.filtered.operated.values); 
+                                actuatorOperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,5, obj.actuatorControl.filtered.operated.values); 
                                 actuatorOperatingTimeInSec(7,1) = round(sum(actuatorOperatingTimeInSec(1:6)),2);
                                 if isprop(obj,'attendantControl')
                                     actuatorOperatingTimeInSec(8,1) =nan;
                                 else
                                     actuatorOperatingTimeInSec(8,1) = round(sum(obj.actuatorControl.profile.values==6 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                          
                                 end 
-                                table(profile,OperatingTimeInSec,actuatorOperatingTimeInSec);
+                                
+                                summationPerProfileTimeInSec(1,1) = round(OperatingTimeInSec(1,1)+ actuatorOperatingTimeInSec(1,1) ,2);
+                        summationPerProfileTimeInSec(2,1) = round(OperatingTimeInSec(2,1)+ actuatorOperatingTimeInSec(2,1) ,2);
+                        summationPerProfileTimeInSec(3,1) = round(OperatingTimeInSec(3,1)+ actuatorOperatingTimeInSec(3,1) ,2);
+                        summationPerProfileTimeInSec(4,1) = round(OperatingTimeInSec(4,1)+ actuatorOperatingTimeInSec(4,1) ,2);
+                        summationPerProfileTimeInSec(5,1) = round(OperatingTimeInSec(5,1)+ actuatorOperatingTimeInSec(5,1) ,2);
+                        summationPerProfileTimeInSec(6,1) = round(OperatingTimeInSec(6,1)+ actuatorOperatingTimeInSec(6,1) ,2);  
+                        summationPerProfileTimeInSec(7,1) = round(sum(summationPerProfileTimeInSec(1:6)),2);
+                        if isprop(obj,'attendantControl')
+                            summationPerProfileTimeInSec(8,1) =nan;
+                        else
+                           summationPerProfileTimeInSec(8,1) = round(OperatingTimeInSec(8,1)+ actuatorOperatingTimeInSec(8,1) ,2);
+                        end   
+                        
+                                table(profile,OperatingTimeInSec,actuatorOperatingTimeInSec,summationPerProfileTimeInSec)
                         else
                           table(profile,OperatingTimeInSec)
                         end
