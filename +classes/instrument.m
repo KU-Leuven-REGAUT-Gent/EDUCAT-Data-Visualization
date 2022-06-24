@@ -1438,11 +1438,19 @@ classdef instrument < dynamicprops
                     end
                     if showHeatMap(3) && isprop(obj,'actuatorControl') && ~isempty(obj.actuatorControl) 
                         % ------ Standard heatmap ------
-                        obj.Heatmp('Filtered',obj.actuatorControl.speed.values,obj.actuatorControl.turn.values,R,standardHeatmap,variableScale,true,fontSize);
+                        obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,standardHeatmap,variableScale,true,fontSize);
                         
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
-                        obj.Heatmp('Actuator',obj.actuatorControl.speed.values,obj.actuatorControl.turn.values,R,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,gridSize,variableScale,true,fontSize);
+                        if showHeatMap(2) && isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                            % ------ Standard heatmap ------
+                            obj.Heatmp('FilteredActuator',obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values,R,standardHeatmap,variableScale,true,fontSize);
+
+                            % ------ Adjustable heatmap ------
+                            gridSize =evalin('base', 'gridSize');
+                            obj.Heatmp('FilteredActuator',obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values,R,gridSize,variableScale,true,fontSize);
+                        end
                     end
                     
                     % ************** Operate plot **************
@@ -2477,7 +2485,9 @@ classdef instrument < dynamicprops
             
             
             htmp.ColorLimits = [0 100];
-            if contains(name,'Actuator')
+            if contains(name,'FilteredActuator')
+                 htmp.Title = s+ "x" + s + " Filtered actuator control Deflection Heat Map";
+            elseif contains(name,'Actuator')
                  htmp.Title = s+ "x" + s + " Actuator control Deflection Heat Map";
             elseif dataFiltered
                 htmp.Title = s+ "x" + s + " filtered Joystick Deflection Heat Map";
