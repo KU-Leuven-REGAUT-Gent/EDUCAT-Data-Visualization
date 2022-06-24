@@ -1271,7 +1271,8 @@ classdef instrument < dynamicprops
                         p=obj.data(1).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
                         p.Marker= '*';
                         if isprop(obj,'actuatorControl') && ~isempty(obj.actuatorControl.operatingTime)
-                            text(startTime+ seconds(1),0.5, "Actuator Operating time: " + round(obj.actuatorControl.operatingTime.values,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
+                            YL = get(gca, 'YLim');
+                            text(startTime+ seconds(1),YL(2)*1.1, "Actuator Operating time: " + round(obj.actuatorControl.operatingTime.values,2) + " s",'fontsize',fontSize,'HorizontalAlignment','left','VerticalAlignment','top');
                         end
                         subplotArray(2) = subplot(2,1,2);
                         obj.data(4).plot(startTime,true,true,true,plotDownSample,downSampleFactor, fontSize);
