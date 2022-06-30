@@ -831,7 +831,7 @@ classdef measurement < dynamicprops
             obj.setup_id = 0;
             obj.setup_name = "Trail 1";
             obj.user_id = 0;
-            obj.user_name = "unknown";
+            obj.user_name = cell2mat(regexp(fPath(1),'UK-(SC|EK)-P00[1-7]','once','match'));
             % ------------------ creating instruments --------filtered-----------
             obj.n_instruments=3;
             obj.instruments = classes.instrument.empty(0,obj.n_instruments);
