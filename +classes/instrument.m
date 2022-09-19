@@ -807,7 +807,18 @@ classdef instrument < dynamicprops
                     filter = filter & (abs(obj.actuatorControl.turn.values)>= deadZone | abs(obj.actuatorControl.speed.values)>= deadZone);
                 end
                 filteredActuatorInControlArray = find(filter);
-                obj.createFilteredActuatorControl(filteredActuatorInControlArray);
+                % attendant actuator control
+                if FilterUnit % percentage
+                    filter = obj.removeStructureConsecutiveZeros(obj.actuatorControl.attendant);
+                    filter = filter & (abs(obj.actuatorControl.attendant.turn.values)>= R*deadZone/100 | abs(obj.actuatorControl.attendant.speed.values)>= R*deadZone/100);
+                else  % value
+                    filter = obj.removeStructureConsecutiveZeros(obj.actuatorControl.attendant);
+                    filter = filter & (abs(obj.actuatorControl.attendant.turn.values)>= deadZone | abs(obj.actuatorControl.attendant.speed.values)>= deadZone);
+                end
+                filteredAttendantActuatorInControlArray = find(filter);
+                
+                obj.createFilteredActuatorControl(filteredActuatorInControlArray,filteredAttendantActuatorInControlArray);
+                
             end
             obj.filterSetting.executed = true;
         end
@@ -949,6 +960,12 @@ classdef instrument < dynamicprops
             obj.actuatorControl.bouts = classes.data("Bouts","bouts/measurement","boolean",1);
             obj.actuatorControl.operatingTime = classes.data("Operating time","s","float_64",1);
             
+            obj.actuatorControl.attendant.turn = classes.data("Turn","raw","int_8",maxCycleCount);
+            obj.actuatorControl.attendant.speed = classes.data("Speed","raw","int_8",maxCycleCount);
+            obj.actuatorControl.attendant.operated = classes.data("Operated","bit","boolean",maxCycleCount);
+            obj.actuatorControl.attendant.bouts = classes.data("Bouts","bouts/measurement","boolean",1);
+            obj.actuatorControl.attendant.operatingTime = classes.data("Operating time","s","float_64",1);
+            
             %Copy turn and speed to actuatorControl when actuator mode is
             %active
             obj.actuatorControl.turn = obj.actuatorControl.turn.add_trial1Data(actuatorControlArray,obj.data(2).values(actuatorControlArray));
@@ -962,11 +979,29 @@ classdef instrument < dynamicprops
             obj.data(3).values(actuatorControlArray) = nan;
             obj.data(4).values(actuatorControlArray) = nan;
             cycleCounterList = ~isnan(obj.data(2).values);
+            
+             %Copy turn and speed to attendant actuatorControl when actuator mode is
+            %active and profile 6 is used
+            attendantControlIDs = obj.actuatorControl.profile.values==6;
+            
+            obj.actuatorControl.attendant.turn = obj.actuatorControl.attendant.turn.add_trial1Data(attendantControlIDs,obj.actuatorControl.turn.values(attendantControlIDs));
+            obj.actuatorControl.attendant.speed = obj.actuatorControl.attendant.speed.add_trial1Data(attendantControlIDs,obj.actuatorControl.speed.values(attendantControlIDs));
+         
+            
+            %Set Turn and speed in Instrument to zero when actuator mode is
+            %active
+            obj.actuatorControl.turn.values(attendantControlIDs) = nan;
+            obj.actuatorControl.speed.values(attendantControlIDs) = nan;
+            obj.actuatorControl.profile.values(attendantControlIDs) = nan;
+            cycleCounterList = ~isnan(obj.data(2).values);
+            
             % recalculate the operation time, operated and bauts
             if sum(~isnan(obj.data(2).values))>0 && sum (~isnan(obj.data(3).values))>0 
                 obj.joystickCalculations(5,obj.data(2).values, obj.data(3).values,cycleCounterList);
             end
+            
             obj.calculateActuatorOperatingTime(actuatorControlArray,obj.actuatorControl.turn.values,obj.actuatorControl.speed.values);
+            obj.calculateAttendantActuatorOperatingTime(attendantControlIDs,obj.actuatorControl.attendant.turn.values,obj.actuatorControl.attendant.speed.values);
         end        
         
         function obj = calculateActuatorOperatingTime(obj,actuatorControlArray,blobTurn,blobSpeed)
@@ -994,7 +1029,7 @@ classdef instrument < dynamicprops
              if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum((measuredCyclesIDs))>0
                 operatedBit  = zeros(numel(blobTurn),0);
                 operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
-                obj.actuatorControl.operated = obj.actuatorControl.operated.add_trial1Data(actuatorControlArray,operatedBit(measuredCyclesIDs));
+                obj.actuatorControl.operated = obj.actuatorControl.operated.add_trial1Data(measuredCyclesIDs,operatedBit(measuredCyclesIDs));
                 
                 % Bouts calculation       
                 flankDet = [operatedBit ;0]- [0; operatedBit];
@@ -1006,8 +1041,44 @@ classdef instrument < dynamicprops
 
         end
         
+        function obj = calculateAttendantActuatorOperatingTime(obj,actuatorControlArray,blobTurn,blobSpeed)
+            
+            if length(obj.actuatorControl.attendant.operated.values)>1 && length(blobTurn) < length(obj.actuatorControl.attendant.operated.values)
+                obj.actuatorControl.attendant.operated = obj.actuatorControl.attendant.operated.resize(1,length(blobTurn));
+                obj.actuatorControl.attendant.operated = obj.actuatorControl.attendant.operated.clear_value();
+            end
+            % operated bit
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             
+            % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+            
+            startZeroID = startZeroID(zeroCrossingIDs);
+            endZeroID =  endZeroID(zeroCrossingIDs)-1;
+            
+            for i = 1: numel(startZeroID)
+                blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+            end
+                        
+         
+            % calculate operated bit.
+             if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum((measuredCyclesIDs))>0
+                operatedBit  = zeros(numel(blobTurn),0);
+                operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+                obj.actuatorControl.attendant.operated = obj.actuatorControl.attendant.operated.add_trial1Data(measuredCyclesIDs,operatedBit(measuredCyclesIDs));
+                
+                % Bouts calculation       
+                flankDet = [operatedBit ;0]- [0; operatedBit];
+                obj.actuatorControl.attendant.bouts = obj.actuatorControl.attendant.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
+                % Operating time
+                obj.actuatorControl.attendant.operatingTime = obj.actuatorControl.attendant.operatingTime.add_trial1Data(1,(sum(obj.actuatorControl.attendant.operated.values(measuredCyclesIDs))-1)*0.02);
+             end
+            
+
+        end
         %filtered
-        function obj = createFilteredActuatorControl(obj,actuatorControlArray)
+        function obj = createFilteredActuatorControl(obj,actuatorControlArray,AttendantActuatorControlArray)
             % Create actuatorControl structure
             % Copy the joystick data when actuator mode equals 1
             % because joystick controls now the actuators instead of
@@ -1031,9 +1102,24 @@ classdef instrument < dynamicprops
             obj.actuatorControl.filtered.speed = obj.actuatorControl.filtered.speed.add_trial1Data(actuatorControlArray,obj.actuatorControl.speed.values(actuatorControlArray));
             obj.actuatorControl.filtered.profile = obj.actuatorControl.filtered.profile.add_trial1Data(actuatorControlArray,obj.actuatorControl.profile.values(actuatorControlArray));
      
+            % filtered attendant actuator control
+            obj.actuatorControl.attendant.filtered.turn = classes.data("Turn","raw","int_8",maxCycleCount);
+            obj.actuatorControl.attendant.filtered.speed = classes.data("Speed","raw","int_8",maxCycleCount);
+            obj.actuatorControl.attendant.filtered.profile = classes.data("Profile","number","int_8",maxCycleCount);
+            obj.actuatorControl.attendant.filtered.operated = classes.data("Operated","bit","boolean",maxCycleCount);
+            obj.actuatorControl.attendant.filtered.bouts = classes.data("Bouts","bouts/measurement","boolean",1);
+            obj.actuatorControl.attendant.filtered.operatingTime = classes.data("Operating time","s","float_64",1);
+            
+            %Copy turn and speed to actuatorControl when actuator mode is
+            %active
+            obj.actuatorControl.attendant.filtered.turn = obj.actuatorControl.attendant.filtered.turn.add_trial1Data(AttendantActuatorControlArray, obj.actuatorControl.attendant.turn.values(AttendantActuatorControlArray));
+            obj.actuatorControl.attendant.filtered.speed = obj.actuatorControl.attendant.filtered.speed.add_trial1Data(AttendantActuatorControlArray,obj.actuatorControl.attendant.speed.values(AttendantActuatorControlArray));
+            
             
            
             obj.calculateFilteredActuatorOperatingTime(actuatorControlArray,obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values);
+            obj.calculateAttendantFilteredActuatorOperatingTime(AttendantActuatorControlArray,obj.actuatorControl.attendant.filtered.turn.values,obj.actuatorControl.attendant.filtered.speed.values);
+
         end        
         
         function obj = calculateFilteredActuatorOperatingTime(obj,actuatorControlArray,blobTurn,blobSpeed)
@@ -1071,6 +1157,40 @@ classdef instrument < dynamicprops
              end
             
 
+        end
+        function obj = calculateAttendantFilteredActuatorOperatingTime(obj,actuatorControlArray,blobTurn,blobSpeed)
+            
+            if length(obj.actuatorControl.filtered.operated.values)>1 && length(blobTurn) < length(obj.actuatorControl.filtered.operated.values)
+                obj.actuatorControl.attendant.filtered.operated = obj.actuatorControl.attendant.filtered.operated.resize(1,length(blobTurn));
+                obj.actuatorControl.attendant.filtered.operated = obj.actuatorControl.attendant.filtered.operated.clear_value();
+            end
+            % operated bit
+             measuredCyclesIDs = ~isnan(blobTurn) & ~isnan(blobSpeed);
+             
+            % adjust turn and speed when less or equal than 3 consecutive [0,0] from the turn and speed
+            [startZeroID, endZeroID, zeroCrossingIDs] = zeroCrossingDetection(obj,blobTurn,blobSpeed);
+            
+            startZeroID = startZeroID(zeroCrossingIDs);
+            endZeroID =  endZeroID(zeroCrossingIDs)-1;
+            
+            for i = 1: numel(startZeroID)
+                blobTurn(startZeroID(i):endZeroID(i)) = 255;
+                blobSpeed(startZeroID(i):endZeroID(i)) = 255;
+            end
+                        
+         
+            % calculate operated bit.
+             if numel(blobTurn) >= 1 && numel(blobSpeed)>=1  &&  sum((measuredCyclesIDs))>0
+                operatedBit  = zeros(numel(blobTurn),0);
+                operatedBit(measuredCyclesIDs,1) = (blobTurn(measuredCyclesIDs) ~= 0 | blobSpeed(measuredCyclesIDs) ~= 0);
+                obj.actuatorControl.attendant.filtered.operated = obj.actuatorControl.attendant.filtered.operated.add_trial1Data(measuredCyclesIDs,operatedBit(measuredCyclesIDs));
+                
+                % Bouts calculation       
+                flankDet = [operatedBit ;0]- [0; operatedBit];
+                obj.actuatorControl.attendant.filtered.bouts = obj.actuatorControl.attendant.filtered.bouts.add_trial1Data(1,sum(flankDet(flankDet>0)));
+                % Operating time
+                obj.actuatorControl.attendant.filtered.operatingTime = obj.actuatorControl.attendant.filtered.operatingTime.add_trial1Data(1,(sum(obj.actuatorControl.attendant.operated.values(measuredCyclesIDs))-1)*0.02);
+             end 
         end
         
         %%  *************** Attendant control *******************
@@ -1208,8 +1328,37 @@ classdef instrument < dynamicprops
              end 
         end
             
-        function profileOperatingTime = profileOperatingTime(obj,profileArray,profineNr, operatedBitArray)
-            profileOperatingTime = round((sum(profileArray==profineNr & operatedBitArray ==1)-1)*0.02 ,2);
+        function profileOperatingTime = profileOperatingTime(obj,profileArray,profileNr, operatedBitArray)
+            profileOperatingTime = (sum(profileArray==profileNr & operatedBitArray ==1))*0.02 ;
+            
+            
+            % correction on the operating time of the last profile activity
+            % Otherwise an extra 20 ms can be noticed to the sum of all profile
+            % operating times. 
+            if profileArray(end) == profileNr
+                profileOperatingTime = profileOperatingTime - 0.02;
+            elseif isnan(profileArray(end))
+                lastMovementID = find(~isnan(profileArray),1,'last');
+                lastIsNan =true;
+                if isprop(obj,'actuatorControl')
+                    lastIsNan= isnan(obj.actuatorControl.operated.values(lastMovementID+1)) & isnan(obj.actuatorControl.attendant.operated.values(lastMovementID+1));
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        lastIsNan = lastIsNan & isnan(obj.actuatorControl.filtered.operated.values(lastMovementID+1)) & isnan(obj.actuatorControl.attendant.filtered.operated.values(lastMovementID+1));
+                    end
+                end
+                if isprop(obj,'attendantControl')
+                    lastIsNan= lastIsNan & isnan(obj.attendantControl.operated.values(lastMovementID+1));
+                    if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                        lastIsNan = lastIsNan & isnan(obj.attendantControl.filtered.operated.values(lastMovementID+1));
+                    end
+                end
+                
+                if profileArray(lastMovementID) == profileNr
+                    profileOperatingTime = profileOperatingTime - 0.02;
+                end
+                profileOperatingTime = round(profileOperatingTime,2);
+            end
+            
             if profileOperatingTime < 0
                 profileOperatingTime = 0;
             end
@@ -1290,8 +1439,10 @@ classdef instrument < dynamicprops
                     % ----- Plot separated  speed and turn
                     if isprop(obj,'actuatorControl')
                         obj.plotJoystickSpeedTurn(obj.actuatorControl, measureID, 'Actuator Control',startTime,fontSize);
+                        obj.plotJoystickSpeedTurn(obj.actuatorControl.attendant, measureID, 'Attendant actuator Control',startTime,fontSize);
                         if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                              obj.plotJoystickSpeedTurn(obj.actuatorControl.filtered, measureID, 'Filtered actuator Control',startTime,fontSize);
+                             obj.plotJoystickSpeedTurn(obj.actuatorControl.attendant.filtered, measureID, 'Filtered attendant actuator Control',startTime,fontSize);
                         end  
                     end
                     if isprop(obj,'attendantControl')
@@ -1312,7 +1463,7 @@ classdef instrument < dynamicprops
                     OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(5).values); 
                     OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)) ,2);
                      if isprop(obj,'attendantControl')
-                        OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.operated.values==1)*0.02  ,2);
+                        OperatingTimeInSec(8,1) = round(obj.attendantControl.operatingTime.values,2);
                      else
                         OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(5).values);
                      end         
@@ -1328,11 +1479,8 @@ classdef instrument < dynamicprops
                         actuatorOperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,4, obj.actuatorControl.operated.values);
                         actuatorOperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.actuatorControl.profile.values,5, obj.actuatorControl.operated.values);                                          
                         actuatorOperatingTimeInSec(7,1) = round(sum(actuatorOperatingTimeInSec(1:6)),2);
-                        if isprop(obj,'attendantControl')
-                            actuatorOperatingTimeInSec(8,1) =nan;
-                        else
-                            actuatorOperatingTimeInSec(8,1) = round(sum(obj.actuatorControl.profile.values==6 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                          
-                        end      
+                        actuatorOperatingTimeInSec(8,1) = round(obj.actuatorControl.attendant.operatingTime.values,2);
+                             
                         
                         summationPerProfileTimeInSec(1,1) = round(OperatingTimeInSec(1,1)+ actuatorOperatingTimeInSec(1,1) ,2);
                         summationPerProfileTimeInSec(2,1) = round(OperatingTimeInSec(2,1)+ actuatorOperatingTimeInSec(2,1) ,2);
@@ -1341,11 +1489,8 @@ classdef instrument < dynamicprops
                         summationPerProfileTimeInSec(5,1) = round(OperatingTimeInSec(5,1)+ actuatorOperatingTimeInSec(5,1) ,2);
                         summationPerProfileTimeInSec(6,1) = round(OperatingTimeInSec(6,1)+ actuatorOperatingTimeInSec(6,1) ,2);  
                         summationPerProfileTimeInSec(7,1) = round(sum(summationPerProfileTimeInSec(1:6)),2);
-                        if isprop(obj,'attendantControl')
-                            summationPerProfileTimeInSec(8,1) =nan;
-                        else
-                           summationPerProfileTimeInSec(8,1) = round(OperatingTimeInSec(8,1)+ actuatorOperatingTimeInSec(8,1) ,2);
-                        end   
+                        summationPerProfileTimeInSec(8,1) = round(OperatingTimeInSec(8,1)+ actuatorOperatingTimeInSec(8,1) ,2);
+                    
                         table(profile,OperatingTimeInSec,actuatorOperatingTimeInSec,summationPerProfileTimeInSec)
 %                         obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,standardHeatmap,variableScale,true,fontSize);
 %                         % ------ Adjustable heatmap ------
@@ -1368,7 +1513,7 @@ classdef instrument < dynamicprops
                         OperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.data(4).values,5, obj.data(10).values);
                         OperatingTimeInSec(7,1) = round(sum(OperatingTimeInSec(1:6)),2);                        
                         if isprop(obj,'attendantControl')
-                            OperatingTimeInSec(8,1) = round(sum(obj.attendantControl.filtered.operated.values==1)*0.02  ,2);
+                            OperatingTimeInSec(8,1) = round(obj.attendantControl.filtered.operatingTime.values,2);
                         else
                              OperatingTimeInSec(8,1) = obj.profileOperatingTime(obj.data(4).values,6, obj.data(10).values);
                         end  
@@ -1383,25 +1528,17 @@ classdef instrument < dynamicprops
                                 actuatorOperatingTimeInSec(5,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,4, obj.actuatorControl.filtered.operated.values); 
                                 actuatorOperatingTimeInSec(6,1) = obj.profileOperatingTime(obj.actuatorControl.filtered.profile.values,5, obj.actuatorControl.filtered.operated.values); 
                                 actuatorOperatingTimeInSec(7,1) = round(sum(actuatorOperatingTimeInSec(1:6)),2);
-                                if isprop(obj,'attendantControl')
-                                    actuatorOperatingTimeInSec(8,1) =nan;
-                                else
-                                    actuatorOperatingTimeInSec(8,1) = round(sum(obj.actuatorControl.profile.values==6 & obj.actuatorControl.operated.values ==1)*0.02 ,2);                          
-                                end 
-                                
+                                actuatorOperatingTimeInSec(8,1) = round(obj.actuatorControl.attendant.filtered.operatingTime.values,2);
+        
                                 summationPerProfileTimeInSec(1,1) = round(OperatingTimeInSec(1,1)+ actuatorOperatingTimeInSec(1,1) ,2);
-                        summationPerProfileTimeInSec(2,1) = round(OperatingTimeInSec(2,1)+ actuatorOperatingTimeInSec(2,1) ,2);
-                        summationPerProfileTimeInSec(3,1) = round(OperatingTimeInSec(3,1)+ actuatorOperatingTimeInSec(3,1) ,2);
-                        summationPerProfileTimeInSec(4,1) = round(OperatingTimeInSec(4,1)+ actuatorOperatingTimeInSec(4,1) ,2);
-                        summationPerProfileTimeInSec(5,1) = round(OperatingTimeInSec(5,1)+ actuatorOperatingTimeInSec(5,1) ,2);
-                        summationPerProfileTimeInSec(6,1) = round(OperatingTimeInSec(6,1)+ actuatorOperatingTimeInSec(6,1) ,2);  
-                        summationPerProfileTimeInSec(7,1) = round(sum(summationPerProfileTimeInSec(1:6)),2);
-                        if isprop(obj,'attendantControl')
-                            summationPerProfileTimeInSec(8,1) =nan;
-                        else
-                           summationPerProfileTimeInSec(8,1) = round(OperatingTimeInSec(8,1)+ actuatorOperatingTimeInSec(8,1) ,2);
-                        end   
-                        
+                                summationPerProfileTimeInSec(2,1) = round(OperatingTimeInSec(2,1)+ actuatorOperatingTimeInSec(2,1) ,2);
+                                summationPerProfileTimeInSec(3,1) = round(OperatingTimeInSec(3,1)+ actuatorOperatingTimeInSec(3,1) ,2);
+                                summationPerProfileTimeInSec(4,1) = round(OperatingTimeInSec(4,1)+ actuatorOperatingTimeInSec(4,1) ,2);
+                                summationPerProfileTimeInSec(5,1) = round(OperatingTimeInSec(5,1)+ actuatorOperatingTimeInSec(5,1) ,2);
+                                summationPerProfileTimeInSec(6,1) = round(OperatingTimeInSec(6,1)+ actuatorOperatingTimeInSec(6,1) ,2);  
+                                summationPerProfileTimeInSec(7,1) = round(sum(summationPerProfileTimeInSec(1:6)),2);
+                                summationPerProfileTimeInSec(8,1) = round(OperatingTimeInSec(8,1)+ actuatorOperatingTimeInSec(8,1) ,2);
+                    
                                 table(profile,OperatingTimeInSec,actuatorOperatingTimeInSec,summationPerProfileTimeInSec)
                         else
                           table(profile,OperatingTimeInSec)
@@ -1415,6 +1552,13 @@ classdef instrument < dynamicprops
                     obj.DeflectionsPattern('',obj.data(2), obj.data(3), fontSize,plotDownSample,downSampleFactor);
                     if isprop(obj,'actuatorControl')
                         obj.DeflectionsPattern('Actuator',obj.actuatorControl.turn, obj.actuatorControl.speed, fontSize,plotDownSample,downSampleFactor);
+                        obj.DeflectionsPattern('Attendannt actuator',obj.actuatorControl.attendant.turn, obj.actuatorControl.attendant.speed, fontSize,plotDownSample,downSampleFactor);
+                        if isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
+                            obj.DeflectionsPattern('Filtered actuator',obj.actuatorControl.filtered.turn, obj.actuatorControl.filtered.speed, fontSize,plotDownSample,downSampleFactor);
+                            obj.DeflectionsPattern('Filtered attendannt actuator',obj.actuatorControl.attendant.filtered.turn, obj.actuatorControl.attendant.filtered.speed, fontSize,plotDownSample,downSampleFactor);
+                
+                        end
+                    
                     end
                     
                     
@@ -1440,17 +1584,21 @@ classdef instrument < dynamicprops
                     if showHeatMap(3) && isprop(obj,'actuatorControl') && ~isempty(obj.actuatorControl) 
                         % ------ Standard heatmap ------
                         obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,standardHeatmap,variableScale,true,fontSize);
-                        
+                        obj.Heatmp('AttendantActuator',obj.actuatorControl.attendant.turn.values,obj.actuatorControl.attendant.speed.values,R,standardHeatmap,variableScale,true,fontSize);
                         % ------ Adjustable heatmap ------
                         gridSize =evalin('base', 'gridSize');
                         obj.Heatmp('Actuator',obj.actuatorControl.turn.values,obj.actuatorControl.speed.values,R,gridSize,variableScale,true,fontSize);
+                        obj.Heatmp('AttendantActuator',obj.actuatorControl.attendant.turn.values,obj.actuatorControl.attendant.speed.values,R,gridSize,variableScale,true,fontSize);
+                       
                         if showHeatMap(2) && isfield(obj.filterSetting,'executed') && obj.filterSetting.executed
                             % ------ Standard heatmap ------
                             obj.Heatmp('FilteredActuator',obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values,R,standardHeatmap,variableScale,true,fontSize);
+                            obj.Heatmp('FilteredAttendantActuator',obj.actuatorControl.attendant.filtered.turn.values,obj.actuatorControl.attendant.filtered.speed.values,R,standardHeatmap,variableScale,true,fontSize);
 
                             % ------ Adjustable heatmap ------
                             gridSize =evalin('base', 'gridSize');
                             obj.Heatmp('FilteredActuator',obj.actuatorControl.filtered.turn.values,obj.actuatorControl.filtered.speed.values,R,gridSize,variableScale,true,fontSize);
+                            obj.Heatmp('FilteredAttendantActuator',obj.actuatorControl.attendant.filtered.turn.values,obj.actuatorControl.attendant.filtered.speed.values,R,gridSize,variableScale,true,fontSize);
                         end
                     end
                     
@@ -2488,6 +2636,10 @@ classdef instrument < dynamicprops
             htmp.ColorLimits = [0 100];
             if contains(name,'FilteredActuator')
                  htmp.Title = s+ "x" + s + " Filtered actuator control Deflection Heat Map";
+            elseif contains(name,'FilteredAttendantActuator')
+                 htmp.Title = s+ "x" + s + " Filtered attendant actuator control Deflection Heat Map";
+            elseif contains(name,'AttendantActuator')
+                 htmp.Title = s+ "x" + s + " Attendand actuator control Deflection Heat Map";
             elseif contains(name,'Actuator')
                  htmp.Title = s+ "x" + s + " Actuator control Deflection Heat Map";
             elseif dataFiltered
@@ -3006,18 +3158,23 @@ classdef instrument < dynamicprops
             
             figure
             subplotArray(1) = subplot(4,1,1);
+            hold on
+            plot(timevec,turn_clean)
+            plot(timevec,speed_clean)
+            legend("Turn","Speed")
+            try
+               subtitle('Processed signals')
+            catch
+                suptitle('Processed signals')
+            end
+            
+            hold off
+            subplotArray(2) = subplot(4,1,2);
             plot(timevec,jerk)
             try
                subtitle('Jerk')
             catch
                 suptitle('Jerk')
-            end
-            subplotArray(2) = subplot(4,1,2);
-            plot(timevec,jerk_integrated)
-            try
-                subtitle('Integrated Jerk')
-            catch
-                suptitle('Integrated Jerk')
             end
             subplotArray(3) = subplot(4,1,3);
             plot(timevec,njs_poly)
