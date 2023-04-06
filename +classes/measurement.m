@@ -109,7 +109,7 @@ classdef measurement < dynamicprops
             end
             
             jdbcDriver = "com.mysql.cj.jdbc.Driver";
-            server = "jdbc:mysql://clouddb.myriade.be:20100/";
+            server = "jdbc:mysql://nmd.fors-it.be:3306/";
             % local database
             
             if useLocal
